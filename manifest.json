@@ -1,0 +1,21 @@
+{
+  "name": "Travel Go",
+  "short_name": "Travel Go",
+  "description": "Aplikasi Manajemen Travel Agent",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0770e3",
+  "icons": [
+    {
+      "src": "img/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "img/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
