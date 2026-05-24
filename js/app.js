@@ -453,5 +453,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       await TMS.Store.initFirebase();
     }
   }
+  if (TMS.Database && TMS.Database.checkInitData) {
+    TMS.Database.checkInitData();
+  }
   TMS.App.init();
 });

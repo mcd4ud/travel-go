@@ -26,6 +26,12 @@ TMS.Database = (() => {
     if (S.getAll('db_rentals').length === 0) {
       DEFAULT_RENTALS.forEach(r => S.add('db_rentals', r));
     }
+    if (S.getAll('airlines').length === 0 && window.TMS_AIRLINES) {
+      window.TMS_AIRLINES.forEach(a => S.add('airlines', a));
+    }
+    if (S.getAll('airports').length === 0 && window.TMS_AIRPORTS) {
+      window.TMS_AIRPORTS.forEach(a => S.add('airports', a));
+    }
   }
 
   function render() {
@@ -757,6 +763,7 @@ TMS.Database = (() => {
 
   return { 
     render, 
+    checkInitData,
     switchTab, 
     searchAirlines, 
     searchAirports, 
