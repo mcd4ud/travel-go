@@ -177,7 +177,8 @@ TMS.Database = (() => {
       ${countries.map(c => `
         <div class="section-title mt-2 country-section" data-country="${c.toLowerCase()}">${c.toUpperCase()} (${groups[c].length})</div>
         <div class="card p-0">
-          <table class="table-sm">
+          <div class="table-container">
+            <table class="table-sm">
             <thead>
               <tr>
                 <th style="width: 80px;">Kode</th>
@@ -201,7 +202,8 @@ TMS.Database = (() => {
                 </tr>
               `).join('')}
             </tbody>
-          </table>
+            </table>
+          </div>
         </div>
       `).join('')}
     </div>`;
