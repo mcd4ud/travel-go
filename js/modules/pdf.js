@@ -1135,6 +1135,36 @@ TMS.PDF = (() => {
                     </div>
                   </div>
                 </div>
+              </div>
+              <!-- Info row -->
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px;border-top:1px dashed rgba(255,255,255,0.2);padding-top:10px;">
+                <div>
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">CHECK-IN</div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;">${formatDate(booking.checkIn)}</div>
+                  <div style="font-size:9px;color:#a0b2c6;margin-top:2px;">14:00 WIB</div>
+                </div>
+                <div>
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">CHECK-OUT</div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;">${formatDate(booking.checkOut)}</div>
+                  <div style="font-size:9px;color:#a0b2c6;margin-top:2px;">12:00 WIB</div>
+                </div>
+                <div>
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">DURATION</div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;">${booking.nights || 1} Night(s)</div>
+                </div>
+                <div>
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">CAPACITY</div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;">2 Adults</div>
+                </div>
+                <div style="grid-column:span 4;">
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">CATATAN KHUSUS / SPECIAL REQUEST</div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;line-height:1.4;">
+                    📌 Permintaan: ${booking.specialRequest || 'Tidak Ada Catatan Khusus'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
       `;
     } else if (invoice.bookingType === 'rental' && booking) {
       bookingCardHtml = `
@@ -1180,6 +1210,36 @@ TMS.PDF = (() => {
                     <div style="font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;line-height:1.2;">${booking.returnLocation || '-'}</div>
                   </div>
                 </div>
+              </div>
+              <!-- Info row -->
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px;border-top:1px dashed rgba(255,255,255,0.2);padding-top:10px;">
+                <div>
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">PICK-UP DATE</div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;">${formatDate(booking.pickupDate)}</div>
+                  <div style="font-size:9px;color:#a0b2c6;margin-top:2px;">09:00 WIB</div>
+                </div>
+                <div>
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">RETURN DATE</div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;">${formatDate(booking.returnDate)}</div>
+                  <div style="font-size:9px;color:#a0b2c6;margin-top:2px;">17:00 WIB</div>
+                </div>
+                <div>
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">DURATION</div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;">${booking.nights || 1} Day(s)</div>
+                </div>
+                <div>
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">TRANSMISSION</div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;">Automatic</div>
+                </div>
+                <div style="grid-column:span 4;">
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">DRIVER STATUS & CATATAN UNIT</div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;line-height:1.4;">
+                    📌 Supir: ${booking.withDriver || 'Lepas Kunci (Tanpa Supir)'} ${booking.facilities ? `<br>📝 Catatan Unit: ${booking.facilities}` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
       `;
     } else if (invoice.bookingType === 'tour' && booking) {
       bookingCardHtml = `
@@ -1222,6 +1282,35 @@ TMS.PDF = (() => {
                     <div style="font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;line-height:1.2;">👥 ${booking.pax || 1} PAX</div>
                   </div>
                 </div>
+              </div>
+              <!-- Info row -->
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px;border-top:1px dashed rgba(255,255,255,0.2);padding-top:10px;">
+                <div>
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">DEPARTURE DATE</div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;">${formatDate(booking.departureDate)}</div>
+                  <div style="font-size:9px;color:#a0b2c6;margin-top:2px;">08:00 WIB</div>
+                </div>
+                <div>
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">TOTAL DURATION</div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;">${booking.days} Day(s)</div>
+                </div>
+                <div>
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">GROUP SIZE</div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;">${booking.pax} Pax</div>
+                </div>
+                <div>
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">REFUND POLICY</div>
+                  <div style="font-size:11px;font-weight:700;color:#ff6b6b;">Non-Refundable</div>
+                </div>
+                <div style="grid-column:span 4;">
+                  <div style="font-size:9px;color:#a0b2c6;font-weight:700;text-transform:uppercase;">FASILITAS & INKLUSI / INCLUSIONS</div>
+                  <div style="font-size:11px;font-weight:700;color:#fff;line-height:1.4;">
+                    📌 Inklusi: ${booking.inclusions ? booking.inclusions.replace(/\n/g, ', ') : 'Fasilitas standar paket wisata.'}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
       `;
     }
 
