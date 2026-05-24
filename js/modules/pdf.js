@@ -1062,7 +1062,7 @@ TMS.PDF = (() => {
         airline: booking.airline || '-', flightNumber: booking.flightNumber || '-',
         date: formatDate(booking.departureDate),
         depTime: booking.departureTime || '--:--', arrTime: booking.arrivalTime || '--:--',
-        seat: booking.seatClass || '-',
+        seat: booking.seatClass || '-', terminal: booking.terminal || '-', baggage: booking.baggage || '20'
       });
 
       const retSection = isRound ? flightSection('PENERBANGAN PULANG / RETURN FLIGHT', {
@@ -1071,7 +1071,7 @@ TMS.PDF = (() => {
         airline: booking.returnAirline || booking.airline || '-', flightNumber: booking.returnFlightNumber || '-',
         date: formatDate(booking.returnDepartureDate),
         depTime: booking.returnDepartureTime || '--:--', arrTime: booking.returnArrivalTime || '--:--',
-        seat: booking.returnSeatClass || '-',
+        seat: booking.returnSeatClass || '-', terminal: booking.returnTerminal || '-', baggage: booking.returnBaggage || '20'
       }) : '';
 
       bookingCardHtml = `
@@ -1082,113 +1082,146 @@ TMS.PDF = (() => {
       `;
     } else if (invoice.bookingType === 'hotel' && booking) {
       bookingCardHtml = `
-        <div style="background:#fff; border-radius:10px; overflow:hidden; margin-top:20px; box-shadow:0 2px 8px rgba(0,0,0,0.06); border:1px solid #d6bd96;">
-          <div style="background:#c9a844; padding:6px 12px;">
-            <div style="font-size:10px;font-weight:800;color:#1a2b5c;letter-spacing:1px;">DETAIL HOTEL & KAMAR / HOTEL & ROOM DETAILS</div>
-          </div>
-          <div style="padding:12px;background:#1a2b5c;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:15px;">
-            <div style="flex:2;">
-              <div style="font-size:8px;color:#a0b2c6;font-weight:600;">HOTEL NAME</div>
-              <div style="font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;">${booking.hotelName}</div>
-              <div style="font-size:9px;color:#d6bd96;margin-top:2px;">📍 ${booking.hotelAddress || '-'}</div>
+        <div style="background:#fff; border-radius:10px; overflow:hidden; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+            <div style="background:#c9a844; padding:8px 16px;">
+              <div style="font-size:11px;font-weight:800;color:#1a2b5c;letter-spacing:1px;">DETAIL HOTEL & KAMAR / HOTEL & ROOM DETAILS</div>
             </div>
-            <div style="flex:1.5;text-align:right;">
-              <div style="font-size:8px;color:#a0b2c6;font-weight:600;">ROOM TYPE & MEAL</div>
-              <div style="font-size:12px;font-weight:700;">${booking.roomType}</div>
-              <div style="font-size:10px;color:#d6bd96;margin-top:2px;">${booking.breakfast === 'Termasuk' || booking.breakfast === 'Breakfast Included' ? '🍳 Termasuk Sarapan' : '❌ Tanpa Sarapan'}</div>
-            </div>
-          </div>
-          <div style="padding:12px;background:#1a2b5c;color:#fff;border-top:1px dashed rgba(255,255,255,0.2);display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-            <div>
-              <div style="font-size:8px;color:#a0b2c6;font-weight:700;">CHECK-IN</div>
-              <div style="font-size:10px;font-weight:700;">${formatDate(booking.checkIn)}</div>
-            </div>
-            <div>
-              <div style="font-size:8px;color:#a0b2c6;font-weight:700;">CHECK-OUT</div>
-              <div style="font-size:10px;font-weight:700;">${formatDate(booking.checkOut)}</div>
-            </div>
-            <div>
-              <div style="font-size:8px;color:#a0b2c6;font-weight:700;">DURATION</div>
-              <div style="font-size:10px;font-weight:700;">${booking.nights || 1} Night(s)</div>
-            </div>
-            <div>
-              <div style="font-size:8px;color:#a0b2c6;font-weight:700;">ROOM NO.</div>
-              <div style="font-size:10px;font-weight:700;">${booking.roomNumber || '-'}</div>
-            </div>
-          </div>
-        </div>
+            <div style="padding:14px 16px;background:#1a2b5c;color:#fff;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <!-- Hotel Name -->
+                <div style="flex: 2; min-width: 150px;">
+                  <div style="font-size:10px;color:#a0b2c6;font-weight:600;text-transform:uppercase;">HOTEL NAME</div>
+                  <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.2;text-transform:uppercase;">${booking.hotelName}</div>
+                  ${booking.roomNumber ? `<div style="font-size:11px;color:#d6bd96;font-weight:700;margin-top:4px;">🔑 NOMOR KAMAR: ${booking.roomNumber}</div>` : ''}
+                  <div style="font-size:9px;color:#a0b2c6;margin-top:2px;">📍 ${booking.hotelAddress || '-'}</div>
+                </div>
+                <!-- Middle (Modern White Line Art Hotel SVG) -->
+                <div style="flex:1;text-align:center;padding:0 10px;display:flex;align-items:center;justify-content:center;">
+                  <svg viewBox="0 0 100 50" width="70" height="35" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <!-- Ground line -->
+                    <line x1="5" y1="45" x2="95" y2="45" stroke="rgba(255,255,255,0.3)" stroke-width="1.2" />
+                    <!-- Main building facade -->
+                    <rect x="25" y="10" width="50" height="35" rx="2" />
+                    <!-- Central premium entrance arch -->
+                    <path d="M43 45 L43 35 C43 31, 57 31, 57 35 L57 45" />
+                    <!-- Columns or decorative lines on side towers -->
+                    <rect x="10" y="20" width="15" height="25" rx="1.5" />
+                    <rect x="75" y="20" width="15" height="25" rx="1.5" />
+                    <!-- Spire/Peak details for modern luxury look -->
+                    <path d="M45 10 L50 2 L55 10" />
+                    <path d="M17 20 L17.5 12 L18 20" />
+                    <path d="M82 20 L82.5 12 L83 20" />
+                    <!-- Detailed window grids (White lines) -->
+                    <line x1="31" y1="16" x2="35" y2="16" stroke-width="1.2" />
+                    <line x1="31" y1="22" x2="35" y2="22" stroke-width="1.2" />
+                    <line x1="31" y1="28" x2="35" y2="28" stroke-width="1.2" />
+                    <line x1="65" y1="16" x2="69" y2="16" stroke-width="1.2" />
+                    <line x1="65" y1="22" x2="69" y2="22" stroke-width="1.2" />
+                    <line x1="65" y1="28" x2="69" y2="28" stroke-width="1.2" />
+                    <line x1="45" y1="22" x2="49" y2="22" stroke-width="1.2" />
+                    <line x1="51" y1="22" x2="55" y2="22" stroke-width="1.2" />
+                  </svg>
+                </div>
+                <!-- Room Type & Breakfast -->
+                <div style="flex: 2; text-align:right; min-width: 150px; display:flex; flex-direction:column; gap:6px;">
+                  <div>
+                    <div style="font-size:9px;color:#a0b2c6;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">ROOM TYPE</div>
+                    <div style="font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;line-height:1.2;">${booking.roomType}</div>
+                  </div>
+                  <div>
+                    <div style="font-size:9px;color:#a0b2c6;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">MEAL PLAN / SARAPAN</div>
+                    <div style="font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;line-height:1.2;">
+                      ${booking.breakfast === 'Termasuk' || booking.breakfast === 'Breakfast Included' ? '🍳 Termasuk Sarapan' : '❌ Tanpa Sarapan'}
+                    </div>
+                  </div>
+                </div>
       `;
     } else if (invoice.bookingType === 'rental' && booking) {
       bookingCardHtml = `
-        <div style="background:#fff; border-radius:10px; overflow:hidden; margin-top:20px; box-shadow:0 2px 8px rgba(0,0,0,0.06); border:1px solid #d6bd96;">
-          <div style="background:#c9a844; padding:6px 12px;">
-            <div style="font-size:10px;font-weight:800;color:#1a2b5c;letter-spacing:1px;">DETAIL KENDARAAN & SEWA / VEHICLE & RENTAL DETAILS</div>
-          </div>
-          <div style="padding:12px;background:#1a2b5c;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:15px;">
-            <div style="flex:2;">
-              <div style="font-size:8px;color:#a0b2c6;font-weight:600;">VEHICLE MODEL</div>
-              <div style="font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;">${booking.vehicleName}</div>
-              <div style="font-size:10px;color:#d6bd96;margin-top:2px;">🚗 PLAT NOMOR: ${booking.licensePlate || '-'}</div>
+        <div style="background:#fff; border-radius:10px; overflow:hidden; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+            <div style="background:#c9a844; padding:8px 16px;">
+              <div style="font-size:11px;font-weight:800;color:#1a2b5c;letter-spacing:1px;">DETAIL KENDARAAN & SEWA / VEHICLE & RENTAL DETAILS</div>
             </div>
-            <div style="flex:1.5;text-align:right;">
-              <div style="font-size:8px;color:#a0b2c6;font-weight:600;">RENTAL OPTIONS</div>
-              <div style="font-size:12px;font-weight:700;">${booking.withDriver || 'Lepas Kunci'}</div>
-              <div style="font-size:10px;color:#d6bd96;margin-top:2px;">Type: ${booking.vehicleType || 'Car'}</div>
-            </div>
-          </div>
-          <div style="padding:12px;background:#1a2b5c;color:#fff;border-top:1px dashed rgba(255,255,255,0.2);display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-            <div>
-              <div style="font-size:8px;color:#a0b2c6;font-weight:700;">PICK-UP DATE</div>
-              <div style="font-size:10px;font-weight:700;">${formatDate(booking.pickupDate)}</div>
-            </div>
-            <div>
-              <div style="font-size:8px;color:#a0b2c6;font-weight:700;">RETURN DATE</div>
-              <div style="font-size:10px;font-weight:700;">${formatDate(booking.returnDate)}</div>
-            </div>
-            <div>
-              <div style="font-size:8px;color:#a0b2c6;font-weight:700;">DURATION</div>
-              <div style="font-size:10px;font-weight:700;">${booking.nights || 1} Day(s)</div>
-            </div>
-            <div>
-              <div style="font-size:8px;color:#a0b2c6;font-weight:700;">PICKUP LOC.</div>
-              <div style="font-size:10px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${booking.pickupLocation || '-'}</div>
-            </div>
-          </div>
-        </div>
+            <div style="padding:14px 16px;background:#1a2b5c;color:#fff;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <!-- Vehicle Name -->
+                <div style="flex: 2; min-width: 150px;">
+                  <div style="font-size:10px;color:#a0b2c6;font-weight:600;text-transform:uppercase;">VEHICLE MODEL</div>
+                  <div style="font-size:20px;font-weight:800;color:#fff;line-height:1.2;text-transform:uppercase;">${booking.vehicleName}</div>
+                  <div style="font-size:11px;color:#d6bd96;font-weight:700;margin-top:4px;">🚗 PLAT NOMOR: ${booking.licensePlate || '-'}</div>
+                  <div style="font-size:9px;color:#a0b2c6;margin-top:2px;">Type: ${booking.vehicleType || 'SUV'}</div>
+                </div>
+                <!-- Middle (Modern White Line Art Car SVG) -->
+                <div style="flex:1;text-align:center;padding:0 10px;display:flex;align-items:center;justify-content:center;">
+                  <svg viewBox="0 0 100 50" width="70" height="35" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <!-- Sleek modern SUV/Sedan profile outline with white details -->
+                    <path d="M5 38 C 5 38, 10 24, 20 24 C 25 24, 28 20, 34 13 C 40 5, 62 4, 72 13 C 78 19, 87 21, 91 27 C 94 30, 95 34, 95 36 C 95 38, 93 39, 88 39 L 77 39 C 75 33, 69 29, 63 29 C 57 29, 51 33, 49 39 L 33 39 C 31 33, 25 29, 19 29 C 13 29, 7 33, 5 39 Z" />
+                    <!-- Windows -->
+                    <path d="M37 15 L 52 15 C 57 15, 60 17, 60 21 L 60 25 L 35 25 L 31 19 C 33 16, 35 15, 37 15 Z" stroke-width="1.2" />
+                    <path d="M63 15 L 70 15 C 74 15, 76 18, 77 22 C 78 24, 78 25, 78 25 L 63 25 Z" stroke-width="1.2" />
+                    <!-- Wheels -->
+                    <circle cx="19" cy="37" r="7" fill="#1a2b5c" stroke="#ffffff" stroke-width="1.8" />
+                    <circle cx="19" cy="37" r="2.5" fill="#ffffff" />
+                    <circle cx="63" cy="37" r="7" fill="#1a2b5c" stroke="#ffffff" stroke-width="1.8" />
+                    <circle cx="63" cy="37" r="2.5" fill="#ffffff" />
+                    <!-- Detail lines -->
+                    <path d="M47 27 L 51 27" stroke-width="1.2" />
+                    <path d="M62 27 L 66 27" stroke-width="1.2" />
+                  </svg>
+                </div>
+                <!-- Pickup & Dropoff -->
+                <div style="flex: 2; text-align:right; min-width: 150px; display:flex; flex-direction:column; gap:6px;">
+                  <div>
+                    <div style="font-size:9px;color:#a0b2c6;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">PICKUP LOCATION</div>
+                    <div style="font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;line-height:1.2;">${booking.pickupLocation || 'Main Office'}</div>
+                  </div>
+                  <div>
+                    <div style="font-size:9px;color:#a0b2c6;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">DROP-OFF LOCATION</div>
+                    <div style="font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;line-height:1.2;">${booking.returnLocation || '-'}</div>
+                  </div>
+                </div>
       `;
     } else if (invoice.bookingType === 'tour' && booking) {
       bookingCardHtml = `
-        <div style="background:#fff; border-radius:10px; overflow:hidden; margin-top:20px; box-shadow:0 2px 8px rgba(0,0,0,0.06); border:1px solid #d6bd96;">
-          <div style="background:#c9a844; padding:6px 12px;">
-            <div style="font-size:10px;font-weight:800;color:#1a2b5c;letter-spacing:1px;">DETAIL PAKET & DESTINASI / TOUR & DESTINATION DETAILS</div>
-          </div>
-          <div style="padding:12px;background:#1a2b5c;color:#fff;display:flex;align-items:center;justify-content:space-between;gap:15px;">
-            <div style="flex:2;">
-              <div style="font-size:8px;color:#a0b2c6;font-weight:600;">TOUR PACKAGE</div>
-              <div style="font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;">${booking.tourName}</div>
-              <div style="font-size:10px;color:#d6bd96;margin-top:2px;">📍 DESTINASI: ${booking.destination || '-'}</div>
+        <div style="background:#fff; border-radius:10px; overflow:hidden; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+            <div style="background:#c9a844; padding:8px 16px;">
+              <div style="font-size:11px;font-weight:800;color:#1a2b5c;letter-spacing:1px;">DETAIL PAKET & DESTINASI / TOUR & DESTINATION DETAILS</div>
             </div>
-            <div style="flex:1.5;text-align:right;">
-              <div style="font-size:8px;color:#a0b2c6;font-weight:600;">TOUR SIZE & POLICY</div>
-              <div style="font-size:12px;font-weight:700;">👥 ${booking.pax || 1} PAX</div>
-              <div style="font-size:10px;color:#ff6b6b;margin-top:2px;font-weight:700;">Non-Refundable</div>
-            </div>
-          </div>
-          <div style="padding:12px;background:#1a2b5c;color:#fff;border-top:1px dashed rgba(255,255,255,0.2);display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-            <div>
-              <div style="font-size:8px;color:#a0b2c6;font-weight:700;">DEPARTURE DATE</div>
-              <div style="font-size:10px;font-weight:700;">${formatDate(booking.departureDate)}</div>
-            </div>
-            <div>
-              <div style="font-size:8px;color:#a0b2c6;font-weight:700;">TOUR DURATION</div>
-              <div style="font-size:10px;font-weight:700;">${booking.days || 1} Day(s)</div>
-            </div>
-            <div>
-              <div style="font-size:8px;color:#a0b2c6;font-weight:700;">INCLUSIONS</div>
-              <div style="font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${booking.inclusions || 'Standard Inclusions'}</div>
-            </div>
-          </div>
-        </div>
+            <div style="padding:14px 16px;background:#1a2b5c;color:#fff;">
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <!-- Tour Name -->
+                <div style="flex: 2; min-width: 150px;">
+                  <div style="font-size:10px;color:#a0b2c6;font-weight:600;text-transform:uppercase;">TOUR PACKAGE</div>
+                  <div style="font-size:18px;font-weight:800;color:#fff;line-height:1.2;text-transform:uppercase;">${booking.tourName}</div>
+                  <div style="font-size:11px;color:#d6bd96;font-weight:700;margin-top:4px;">📍 DESTINASI: ${booking.destination || '-'}</div>
+                </div>
+                <!-- Middle (Relaxing Palm Tree & Summer Sun SVG) -->
+                <div style="flex:1;text-align:center;padding:0 10px;display:flex;align-items:center;justify-content:center;">
+                  <svg viewBox="0 0 100 50" width="70" height="35" fill="none" stroke="#ffffff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="50" cy="20" r="10" stroke="rgba(255,255,255,0.35)" stroke-width="1.2" stroke-dasharray="2 1" />
+                    <path d="M15 42 Q 25 38, 35 42 T 55 42 T 75 42 T 85 42" stroke="rgba(255,255,255,0.6)" stroke-width="1.2" />
+                    <path d="M10 45 Q 22 41, 35 45 T 60 45 T 85 45" stroke="rgba(255,255,255,0.3)" stroke-width="1.0" />
+                    <path d="M36 42 Q 43 30, 48 15" stroke="#ffffff" stroke-width="2.2" />
+                    <path d="M48 15 Q 38 12, 30 18" />
+                    <path d="M48 15 Q 40 7, 39 1" />
+                    <path d="M48 15 Q 52 5, 60 4" />
+                    <path d="M48 15 Q 58 10, 62 17" />
+                    <path d="M48 15 Q 54 21, 51 28" />
+                    <path d="M48 15 Q 43 21, 38 25" />
+                    <path d="M72 42 Q 79 36, 86 42" stroke="rgba(255,255,255,0.7)" stroke-width="1.2" />
+                  </svg>
+                </div>
+                <!-- Duration & Capacity Symmetrical -->
+                <div style="flex: 2; text-align:right; min-width: 150px; display:flex; flex-direction:column; gap:6px;">
+                  <div>
+                    <div style="font-size:9px;color:#a0b2c6;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">TOUR DURATION</div>
+                    <div style="font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;line-height:1.2;">${booking.days || 1} DAY(S)</div>
+                  </div>
+                  <div>
+                    <div style="font-size:9px;color:#a0b2c6;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">GROUP CAPACITY</div>
+                    <div style="font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;line-height:1.2;">👥 ${booking.pax || 1} PAX</div>
+                  </div>
+                </div>
       `;
     }
 
