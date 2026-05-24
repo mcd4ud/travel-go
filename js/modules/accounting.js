@@ -131,7 +131,7 @@ TMS.Accounting = (() => {
         </div>
       </div>
 
-      <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-top:20px;">
+      <div class="stat-grid" style="margin-top:20px;">
         <div class="stat-card blue"><div class="stat-icon blue"><i data-lucide="arrow-up-circle"></i></div><div class="stat-value" style="font-size:18px;">${S.formatCurrency(d.totalRevenue)}</div><div class="stat-label">Total Pendapatan</div></div>
         <div class="stat-card orange"><div class="stat-icon orange"><i data-lucide="package"></i></div><div class="stat-value" style="font-size:18px;">${S.formatCurrency(d.totalCOGS)}</div><div class="stat-label">Total BPP</div></div>
         <div class="stat-card ${d.grossProfit >= 0 ? 'green' : 'red'}"><div class="stat-icon ${d.grossProfit >= 0 ? 'green' : 'red'}"><i data-lucide="trending-up"></i></div><div class="stat-value" style="font-size:18px;">${S.formatCurrency(d.grossProfit)}</div><div class="stat-label">Laba Kotor</div></div>
@@ -168,7 +168,8 @@ TMS.Accounting = (() => {
       <div class="grid-2">
         <div class="card">
           <div class="card-header"><div class="card-title">ASET</div></div>
-          <table class="financial-table">
+          <div class="table-container">
+            <table class="financial-table">
             <tbody>
               ${regularAssets.map(a => `<tr><td>${a.name}<br><span class="font-mono text-muted" style="font-size:10px">${a.code}</span></td><td class="text-right">${S.formatCurrency(a.balance)}</td></tr>`).join('')}
               
@@ -192,20 +193,24 @@ TMS.Accounting = (() => {
               <tr class="grand-total"><td><strong>TOTAL ASET</strong></td><td class="text-right amount-positive"><strong>${S.formatCurrency(d.totalAsset)}</strong></td></tr>
             </tbody>
           </table>
+          </div>
         </div>
         <div>
           <div class="card mb-2">
             <div class="card-header"><div class="card-title">KEWAJIBAN</div></div>
-            <table class="financial-table">
+            <div class="table-container">
+              <table class="financial-table">
               <tbody>
                 ${liabilities.map(a => `<tr><td>${a.name}<br><span class="font-mono text-muted" style="font-size:10px">${a.code}</span></td><td class="text-right">${S.formatCurrency(a.balance)}</td></tr>`).join('')}
                 <tr class="total-row"><td><strong>Total Kewajiban</strong></td><td class="text-right amount-negative"><strong>${S.formatCurrency(d.totalLiability)}</strong></td></tr>
               </tbody>
             </table>
+            </div>
           </div>
           <div class="card">
             <div class="card-header"><div class="card-title">EKUITAS</div></div>
-            <table class="financial-table">
+            <div class="table-container">
+              <table class="financial-table">
               <tbody>
                 ${equities.map(a => `<tr><td>${a.name}<br><span class="font-mono text-muted" style="font-size:10px">${a.code}</span></td><td class="text-right">${S.formatCurrency(a.balance)}</td></tr>`).join('')}
                 <tr><td>Laba Bersih Berjalan</td><td class="text-right ${retainedEarnings >= 0 ? 'amount-positive' : 'amount-negative'}">${S.formatCurrency(retainedEarnings)}</td></tr>
@@ -213,6 +218,7 @@ TMS.Accounting = (() => {
                 <tr class="grand-total"><td><strong>TOTAL KEWAJIBAN + EKUITAS</strong></td><td class="text-right ${Math.abs(d.totalAsset - totalLiabEquity) < 1 ? 'amount-positive' : 'amount-negative'}"><strong>${S.formatCurrency(totalLiabEquity)}</strong></td></tr>
               </tbody>
             </table>
+            </div>
             ${Math.abs(d.totalAsset - totalLiabEquity) < 1
               ? `<div style="margin-top:12px;padding:10px;background:var(--success-bg);border-radius:8px;color:var(--success);font-size:12px;font-weight:600;text-align:center;">✓ Neraca Seimbang (Balance)</div>`
               : `<div style="margin-top:12px;padding:10px;background:var(--danger-bg);border-radius:8px;color:var(--danger);font-size:12px;font-weight:600;text-align:center;">⚠ Neraca Tidak Seimbang — Selisih: ${S.formatCurrency(Math.abs(d.totalAsset - totalLiabEquity))}</div>`}
@@ -259,7 +265,8 @@ TMS.Accounting = (() => {
         <button class="btn btn-primary" onclick="TMS.Accounting.downloadCashFlow()"><i data-lucide="download"></i> Unduh PDF</button>
       </div>
       <div class="card">
-        <table class="financial-table">
+        <div class="table-container">
+          <table class="financial-table">
           <thead><tr><th>Keterangan</th><th class="text-right">Jumlah</th><th class="text-right">Total</th></tr></thead>
           <tbody>
             <tr class="section-header"><td colspan="3">A. ARUS KAS DARI AKTIVITAS OPERASIONAL</td></tr>
@@ -280,9 +287,10 @@ TMS.Accounting = (() => {
             <tr><td colspan="2">Saldo Kas & Bank Akhir Periode</td><td class="text-right"><strong style="color:var(--primary-light);">${S.formatCurrency(kasBalance)}</strong></td></tr>
           </tbody>
         </table>
+        </div>
       </div>
 
-      <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin-top:20px;">
+      <div class="stat-grid" style="margin-top:20px;">
         <div class="stat-card green"><div class="stat-icon green"><i data-lucide="arrow-down-circle"></i></div><div class="stat-value" style="font-size:18px;">${S.formatCurrency(totalReceived)}</div><div class="stat-label">Total Kas Masuk</div></div>
         <div class="stat-card red"><div class="stat-icon red"><i data-lucide="arrow-up-circle"></i></div><div class="stat-value" style="font-size:18px;">${S.formatCurrency(totalExpensePaid)}</div><div class="stat-label">Total Kas Keluar</div></div>
         <div class="stat-card ${kasBalance >= 0 ? 'blue' : 'red'}"><div class="stat-icon ${kasBalance >= 0 ? 'blue' : 'red'}"><i data-lucide="landmark"></i></div><div class="stat-value" style="font-size:18px;">${S.formatCurrency(kasBalance)}</div><div class="stat-label">Saldo Kas & Bank</div></div>
