@@ -419,8 +419,26 @@ TMS.App = (() => {
     // Mobile sidebar toggle
     const menuBtn = document.getElementById('menuToggle');
     const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.querySelector('.main-content');
     if (menuBtn && sidebar) {
-      menuBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
+      menuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sidebar.classList.toggle('open');
+      });
+    }
+    
+    // Auto close sidebar on mobile when clicking nav items or main content
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        if (window.innerWidth <= 768 && sidebar) sidebar.classList.remove('open');
+      });
+    });
+    if (mainContent && sidebar) {
+      mainContent.addEventListener('click', () => {
+        if (window.innerWidth <= 768 && sidebar.classList.contains('open')) {
+          sidebar.classList.remove('open');
+        }
+      });
     }
   }
 

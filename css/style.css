@@ -539,13 +539,19 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 
 /* ========== RESPONSIVE ========== */
 @media (max-width: 768px) {
-  .sidebar { transform: translateX(-100%); }
+  .sidebar { transform: translateX(-100%); z-index: 1000; box-shadow: 4px 0 24px rgba(0,0,0,0.5); }
   .sidebar.open { transform: translateX(0); }
-  .main-content { margin-left: 0; }
-  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .main-content { margin-left: 0; width: 100vw; overflow-x: hidden; }
+  .stat-grid { grid-template-columns: 1fr; }
   .charts-grid { grid-template-columns: 1fr; }
-  .form-row, .form-row-3 { grid-template-columns: 1fr; }
+  .form-row, .form-row-3, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
   .toolbar { flex-direction: column; align-items: stretch; }
+  #menuToggle { display: inline-flex !important; margin-right: 8px; }
+  .topbar { padding: 0 16px; height: 56px; }
+  .page-content { padding: 16px; overflow-x: hidden; }
+  .card { padding: 16px; overflow-x: auto; }
+  .modal-body { padding: 16px; }
+  .modal { width: 100%; margin: 10px; }
 }
 
 /* ========== PRINT ========== */
