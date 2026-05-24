@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Travel Management System - Platform manajemen perjalanan profesional dengan e-tiket, voucher, dan pelaporan keuangan terpadu.">
+  <title>Travel Go — Travel Management System</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <!-- jsPDF + AutoTable + html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/style.css?v=4">
+</head>
+<body>
+
+<div class="app-layout hidden">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+        <img src="img/logo.png?v=2" alt="Logo" id="appSidebarLogo" style="width: 140px; height: auto; object-fit: contain; background: transparent; display: block; margin: 0 auto; padding: 0;">
+        <div class="sidebar-brand">
+          <h1 id="appSidebarTitle">Travel Go</h1>
+        <span>Travel Management System</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- Overview -->
+      <div class="nav-section">
+        <div class="nav-section-title">Overview</div>
+        <a class="nav-item" data-page="dashboard" onclick="TMS.App.navigate('dashboard')">
+          <i data-lucide="layout-dashboard"></i> Dashboard
+        </a>
+      </div>
+
+      <!-- Reservasi -->
+      <div class="nav-section">
+        <div class="nav-section-title">Reservasi & Dokumen</div>
+        <a class="nav-item" data-page="flights" onclick="TMS.App.navigate('flights')">
+          <i data-lucide="plane"></i> E-Tiket Pesawat
+        </a>
+        <a class="nav-item" data-page="hotels" onclick="TMS.App.navigate('hotels')">
+          <i data-lucide="hotel"></i> Voucher Hotel
+        </a>
+        <a class="nav-item" data-page="rentals" onclick="TMS.App.navigate('rentals')">
+          <i data-lucide="car"></i> Voucher Rental
+        </a>
+        <a class="nav-item" data-page="tours" onclick="TMS.App.navigate('tours')">
+          <i data-lucide="map"></i> Paket Wisata
+        </a>
+        <a class="nav-item" data-page="invoices" onclick="TMS.App.navigate('invoices')">
+          <i data-lucide="file-text"></i> Invoice
+          <span class="nav-badge" id="invoiceBadge" style="display:none;">0</span>
+        </a>
+        <a class="nav-item" data-page="refunds" onclick="TMS.App.navigate('refunds')">
+          <i data-lucide="rotate-ccw"></i> Refund & Void
+        </a>
+        <a class="nav-item" data-page="verify" onclick="TMS.App.navigate('verify')">
+          <i data-lucide="shield-check"></i> Verifikasi Bayar
+          <span class="nav-badge" id="verifyBadge" style="display:none;">0</span>
+        </a>
+        <a class="nav-item" data-page="customers" onclick="TMS.App.navigate('customers')">
+          <i data-lucide="users"></i> Manajemen Pelanggan
+        </a>
+        <a class="nav-item" data-page="vendors" onclick="TMS.App.navigate('vendors')">
+          <i data-lucide="building-2"></i> Manajemen Vendor
+        </a>
+        <a class="nav-item" data-page="database" onclick="TMS.App.navigate('database')">
+          <i data-lucide="database"></i> Manajemen Database
+        </a>
+      </div>
+
+      <!-- Akuntansi -->
+      <div class="nav-section">
+        <div class="nav-section-title">Akuntansi</div>
+        <a class="nav-item" data-page="coa" onclick="TMS.App.navigate('coa')">
+          <i data-lucide="book"></i> Chart of Accounts
+        </a>
+        <a class="nav-item" data-page="expenses" onclick="TMS.App.navigate('expenses')">
+          <i data-lucide="trending-down"></i> Beban Operasional
+        </a>
+        <a class="nav-item" data-page="journals" onclick="TMS.App.navigate('journals')">
+          <i data-lucide="clipboard-list"></i> Jurnal Umum
+        </a>
+        <a class="nav-item" data-page="accounting" onclick="TMS.App.navigate('accounting')">
+          <i data-lucide="bar-chart-2"></i> Laporan Keuangan
+        </a>
+      </div>
+
+      <!-- Admin & Keamanan -->
+      <div class="nav-section">
+        <div class="nav-section-title">Admin & Keamanan</div>
+        <a class="nav-item" data-page="fraud" onclick="TMS.App.navigate('fraud')">
+          <i data-lucide="shield-alert"></i> Fraud Management
+        </a>
+        <a class="nav-item" data-page="users" onclick="TMS.App.navigate('users')">
+          <i data-lucide="user-cog"></i> Manajemen User
+        </a>
+        <a class="nav-item" data-page="settings" onclick="TMS.App.navigate('settings')">
+          <i data-lucide="settings"></i> Pengaturan
+        </a>
+      </div>
+    </nav>
+
+    <!-- Sidebar Footer -->
+    <div style="padding:16px;border-top:1px solid var(--border-color);">
+      <div style="font-size:11px;color:var(--text-muted);text-align:center;">
+        <div style="margin-bottom:4px;" id="footerCompanyText">PT. Travela Nusantara</div>
+        <div>v1.0.0 — 2026</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button id="menuToggle" class="btn btn-ghost btn-icon" style="display:none;">
+          <i data-lucide="menu"></i>
+        </button>
+        <div>
+          <div class="topbar-title" id="topbarTitle">Dashboard</div>
+          <div class="topbar-breadcrumb">Travel Go • Sistem Manajemen Perjalanan</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="user-profile-btn" style="display:flex; align-items:center; gap:12px; cursor:pointer; transition:all 0.2s;" onclick="TMS.Auth.logout()" title="Klik untuk Logout">
+          <div style="text-align:right; font-size:12px;">
+            <div style="font-weight:700;" id="userNameDisplay">User</div>
+            <div style="color:var(--text-muted); font-size:10px;" id="userRoleDisplay">Staff</div>
+          </div>
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--gradient-blue);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:white;" id="userInitial">?</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <div class="page-content" id="pageContent">
+      <!-- Rendered by JS router -->
+      <div style="display:flex;align-items:center;justify-content:center;height:60vh;flex-direction:column;gap:16px;">
+        <div style="width:48px;height:48px;border:3px solid var(--primary);border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;"></div>
+        <div class="text-muted">Memuat aplikasi...</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ===== GLOBAL MODALS ===== -->
+
+<!-- Invoice Detail Modal -->
+<div class="modal-overlay" id="invoiceDetailModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">Detail Invoice</span>
+      <button class="modal-close" onclick="document.getElementById('invoiceDetailModal').classList.remove('active')">✕</button>
+    </div>
+    <div class="modal-body" id="invoiceDetailBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="document.getElementById('invoiceDetailModal').classList.remove('active')">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal-overlay" id="paymentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">💰 Proses Pembayaran</span>
+      <button class="modal-close" onclick="document.getElementById('paymentModal').classList.remove('active')">✕</button>
+    </div>
+    <div class="modal-body" id="paymentModalBody"></div>
+  </div>
+</div>
+
+<!-- Verify Payment Modal -->
+<div class="modal-overlay" id="verifyModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title">🛡 Verifikasi Pembayaran</span>
+      <button class="modal-close" onclick="document.getElementById('verifyModal').classList.remove('active')">✕</button>
+    </div>
+    <div class="modal-body" id="verifyModalBody"></div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- Journal Detail Modal -->
+<div class="modal-overlay" id="journalModal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <span class="modal-title" id="journalModalTitle">Jurnal Umum</span>
+      <button class="modal-close" onclick="document.getElementById('journalModal').classList.remove('active')">✕</button>
+    </div>
+    <div class="modal-body" id="journalModalBody"></div>
+  </div>
+</div>
+
+<!-- Spin animation -->
+<style>
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .nav-item { cursor: pointer; }
+</style>
+
+<!-- ===== SCRIPTS ===== -->
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="js/data/airlines.js"></script>
+<script src="js/data/airports.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/store.js"></script>
+<script src="js/modules/auth.js?v=10"></script>
+<script src="js/modules/pdf.js?v=10"></script>
+<script src="js/modules/dashboard.js?v=10"></script>
+<script src="js/modules/flight.js?v=10"></script>
+<script src="js/modules/refund.js?v=10"></script>
+<script src="js/modules/customer.js?v=10"></script>
+<script src="js/modules/hotel.js?v=10"></script>
+<script src="js/modules/rental.js?v=10"></script>
+<script src="js/modules/tour.js?v=10"></script>
+<script src="js/modules/payment.js?v=10"></script>
+<script src="js/modules/invoice.js?v=10"></script>
+<script src="js/modules/coa.js?v=10"></script>
+<script src="js/modules/expenses.js?v=10"></script>
+<script src="js/modules/settings.js?v=10"></script>
+<script src="js/modules/user_mgmt.js?v=10"></script>
+<script src="js/modules/accounting.js?v=10"></script>
+<script src="js/modules/vendor.js?v=10"></script>
+<script src="js/modules/database.js?v=10"></script>
+<script src="js/app.js?v=10"></script>
+
+<!-- Live Clock -->
+<script>
+  function updateClock() {
+    const now = new Date();
+    const dateEl = document.getElementById('currentDate');
+    const timeEl = document.getElementById('currentTime');
+    if (dateEl) dateEl.textContent = now.toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+    if (timeEl) timeEl.textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Mobile menu
+  const mq = window.matchMedia('(max-width: 768px)');
+  function handleMQ(e) {
+    const menuBtn = document.getElementById('menuToggle');
+    if (menuBtn) menuBtn.style.display = e.matches ? 'flex' : 'none';
+  }
+  mq.addListener(handleMQ);
+  handleMQ(mq);
+
+  // Close sidebar on outside click (mobile)
+  document.addEventListener('click', (e) => {
+    const sidebar = document.querySelector('.sidebar');
+    const menuBtn = document.getElementById('menuToggle');
+    if (sidebar && sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target !== menuBtn) {
+      sidebar.classList.remove('open');
+    }
+  });
+</script>
+
+</body>
+</html>
