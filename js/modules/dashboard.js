@@ -84,7 +84,7 @@ TMS.Dashboard = (() => {
       </div>
 
       <!-- Row 2: Financial Widgets -->
-      <div style="display:grid; grid-template-columns:1fr 2fr 1fr; gap:20px; margin-bottom:32px; align-items:stretch;">
+      <div class="financial-grid">
 
         <!-- Widget: Total Piutang -->
         <div class="card" style="padding:24px; display:flex; flex-direction:column; justify-content:center;">

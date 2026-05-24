@@ -497,6 +497,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+.financial-grid { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 20px; margin-bottom: 32px; align-items: stretch; }
 .hidden { display: none !important; }
 
 /* Dashboard Specific */
@@ -544,7 +545,7 @@ tr:hover td { background: rgba(255,255,255,0.02); }
   .main-content { margin-left: 0; width: 100vw; overflow-x: hidden; }
   .stat-grid { grid-template-columns: 1fr; }
   .charts-grid { grid-template-columns: 1fr; }
-  .form-row, .form-row-3, .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr !important; }
+  .form-row, .form-row-3, .grid-2, .grid-3, .grid-4, .financial-grid { grid-template-columns: 1fr !important; }
   .toolbar { flex-direction: column; align-items: stretch; }
   #menuToggle { display: inline-flex !important; margin-right: 8px; }
   .topbar { padding: 0 16px; height: 56px; }
