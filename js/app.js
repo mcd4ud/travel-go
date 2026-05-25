@@ -255,8 +255,8 @@ TMS.App = (() => {
     const isSuperAdmin = user && user.role === 'superadmin';
     
     // Hide nav-section headers for superadmin
-    document.querySelectorAll('.nav-section').forEach(section => {
-      section.style.display = isSuperAdmin ? 'none' : 'block';
+    document.querySelectorAll('.nav-section-title').forEach(title => {
+      title.style.display = isSuperAdmin ? 'none' : 'block';
     });
 
     document.querySelectorAll('.nav-item').forEach(item => {
