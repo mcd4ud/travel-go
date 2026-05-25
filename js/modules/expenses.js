@@ -34,7 +34,11 @@ TMS.Expenses = (() => {
 
       <div class="toolbar">
         <div class="search-box"><i data-lucide="search"></i><input type="text" placeholder="Cari deskripsi beban..." oninput="TMS.Expenses.search(this.value)"></div>
-        <button class="btn btn-primary" onclick="TMS.Expenses.showForm()"><i data-lucide="plus"></i> Input Beban Operasional</button>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="TMS.Excel.triggerImport('expenses')"><i data-lucide="upload"></i> Import</button>
+          <button class="btn btn-secondary" onclick="TMS.Excel.exportData('expenses')"><i data-lucide="download"></i> Export</button>
+          <button class="btn btn-primary" onclick="TMS.Expenses.showForm()"><i data-lucide="plus"></i> Input Beban Operasional</button>
+        </div>
       </div>
 
       <div class="card">

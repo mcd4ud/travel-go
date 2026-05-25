@@ -136,6 +136,8 @@ TMS.Flight = (() => {
       <div class="toolbar">
         <div class="search-box"><i data-lucide="search"></i><input type="text" id="flightSearch" placeholder="Cari nama pelanggan, kode booking..." oninput="TMS.Flight.search(this.value)"></div>
         <div class="btn-group">
+          <button class="btn btn-secondary" onclick="TMS.Excel.triggerImport('flights')"><i data-lucide="upload"></i> Import</button>
+          <button class="btn btn-secondary" onclick="TMS.Excel.exportData('flights')"><i data-lucide="download"></i> Export</button>
           <button class="btn btn-primary" onclick="TMS.Flight.showForm()"><i data-lucide="plus"></i> Buat E-Tiket</button>
         </div>
       </div>

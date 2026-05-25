@@ -69,7 +69,11 @@ TMS.Tour = (() => {
     <div class="fade-in">
       <div class="toolbar">
         <div class="search-box"><i data-lucide="search"></i><input type="text" id="tourSearch" placeholder="Cari paket, pelanggan..." oninput="TMS.Tour.search(this.value)"></div>
-        <button class="btn btn-primary" onclick="TMS.Tour.showForm()"><i data-lucide="plus"></i> Buat Paket Wisata</button>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="TMS.Excel.triggerImport('tours')"><i data-lucide="upload"></i> Import</button>
+          <button class="btn btn-secondary" onclick="TMS.Excel.exportData('tours')"><i data-lucide="download"></i> Export</button>
+          <button class="btn btn-primary" onclick="TMS.Tour.showForm()"><i data-lucide="plus"></i> Buat Paket Wisata</button>
+        </div>
       </div>
       <div class="card">
         <div class="table-container">

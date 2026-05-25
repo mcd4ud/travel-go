@@ -70,7 +70,11 @@ TMS.Rental = (() => {
     <div class="fade-in">
       <div class="toolbar">
         <div class="search-box"><i data-lucide="search"></i><input type="text" id="rentalSearch" placeholder="Cari pelanggan, kode booking..." oninput="TMS.Rental.search(this.value)"></div>
-        <button class="btn btn-primary" onclick="TMS.Rental.showForm()"><i data-lucide="plus"></i> Buat Voucher Rental</button>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="TMS.Excel.triggerImport('rentals')"><i data-lucide="upload"></i> Import</button>
+          <button class="btn btn-secondary" onclick="TMS.Excel.exportData('rentals')"><i data-lucide="download"></i> Export</button>
+          <button class="btn btn-primary" onclick="TMS.Rental.showForm()"><i data-lucide="plus"></i> Buat Voucher Rental</button>
+        </div>
       </div>
       <div class="card">
         <div class="table-container">
