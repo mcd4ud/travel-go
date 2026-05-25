@@ -173,11 +173,26 @@ TMS.Store = (() => {
   let data = loadData();
   saveData(data); // Simpan perubahan migrasi jika ada
 
+  let currentTenantId = null;
+  function setCurrentTenantId(id) { currentTenantId = id; }
+  function getTenantId() { return currentTenantId; }
+
+  function getDbRef(collectionName) {
+    const db = window.TMS && window.TMS.Firebase ? window.TMS.Firebase.getDB() : null;
+    if (!db) return null;
+    if (collectionName === 'users' || collectionName === 'companies' || collectionName === 'fraudLogs') return db.collection(collectionName);
+    if (!currentTenantId) return null;
+    if (currentTenantId === 'SUPERADMIN') return db.collection(collectionName);
+    return db.collection('companies').doc(currentTenantId).collection(collectionName);
+  }
+
   async function initFirebase() {
     const db = window.TMS && window.TMS.Firebase ? window.TMS.Firebase.getDB() : null;
     if (!db) return false;
 
     const collections = ['flights', 'hotels', 'rentals', 'tours', 'invoices', 'refunds', 'journals', 'expenses', 'payments', 'customers', 'vendors', 'airlines', 'airports', 'coa', 'users', 'fraudLogs'];
+
+    if (!currentTenantId) return false;
 
     try {
       const snap = await getDbRef('settings').doc('config').get();
@@ -237,7 +252,7 @@ TMS.Store = (() => {
   function generateCode(prefix) {
     data.counters[prefix] = (data.counters[prefix] || 0) + 1;
     saveData(data);
-    if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) {
+    if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) {
         getDbRef('settings').doc('counters').set(data.counters).catch(console.error);
     }
     const num = String(data.counters[prefix]).padStart(5, '0');
@@ -268,7 +283,7 @@ TMS.Store = (() => {
     item.createdAt = item.createdAt || new Date().toISOString();
     data[collection].push(item);
     saveData(data);
-    if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) {
+    if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) {
        getDbRef(collection).doc(item.id).set(item).catch(console.error);
     }
     return item;
@@ -279,7 +294,7 @@ TMS.Store = (() => {
     if (idx === -1) return null;
     data[collection][idx] = { ...data[collection][idx], ...updates, updatedAt: new Date().toISOString() };
     saveData(data);
-    if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) {
+    if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) {
        getDbRef(collection).doc(id).update(updates).catch(console.error);
     }
     return data[collection][idx];
@@ -288,7 +303,7 @@ TMS.Store = (() => {
   function remove(collection, id) {
     data[collection] = data[collection].filter(item => item.id !== id);
     saveData(data);
-    if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) {
+    if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) {
        getDbRef(collection).doc(id).delete().catch(console.error);
     }
   }
@@ -301,14 +316,14 @@ TMS.Store = (() => {
     if (!account.id) account.id = account.code || generateId();
     data.coa.push(account); 
     saveData(data); 
-    if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('coa').doc(account.id).set(account).catch(console.error);
+    if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) getDbRef('coa').doc(account.id).set(account).catch(console.error);
   }
   function updateCOA(code, updates) {
     const idx = data.coa.findIndex(a => a.code === code);
     if (idx !== -1) { 
       data.coa[idx] = { ...data.coa[idx], ...updates }; 
       saveData(data); 
-      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('coa').doc(data.coa[idx].id || code).update(updates).catch(console.error);
+      if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) getDbRef('coa').doc(data.coa[idx].id || code).update(updates).catch(console.error);
     }
   }
   function removeCOA(code) {
@@ -316,7 +331,7 @@ TMS.Store = (() => {
     const id = acc ? (acc.id || code) : code;
     data.coa = data.coa.filter(a => a.code !== code);
     saveData(data);
-    if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('coa').doc(id).delete().catch(console.error);
+    if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) getDbRef('coa').doc(id).delete().catch(console.error);
   }
 
   // Update COA balance
@@ -325,7 +340,7 @@ TMS.Store = (() => {
     if (acc) { 
       acc.balance = (acc.balance || 0) + amount; 
       saveData(data); 
-      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('coa').doc(acc.id || code).update({ balance: acc.balance }).catch(console.error);
+      if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) getDbRef('coa').doc(acc.id || code).update({ balance: acc.balance }).catch(console.error);
     }
   }
 
@@ -413,7 +428,7 @@ TMS.Store = (() => {
   async function updateSettings(s) { 
     data.settings = { ...data.settings, ...s }; 
     saveData(data); 
-    if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) {
+    if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) {
       try {
         await getDbRef('settings').doc('config').set(data.settings);
       } catch (err) {
@@ -519,7 +534,7 @@ TMS.Store = (() => {
       if (!data.fraudLogs) data.fraudLogs = [];
       data.fraudLogs.push(log);
       saveData(data);
-      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('fraudLogs').doc(log.id).set(log).catch(console.error);
+      if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) getDbRef('fraudLogs').doc(log.id).set(log).catch(console.error);
     }
     return flags;
   }
@@ -532,12 +547,12 @@ TMS.Store = (() => {
       log.resolved = true; 
       log.resolvedAt = new Date().toISOString(); 
       saveData(data); 
-      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('fraudLogs').doc(log.id).update({ resolved: true, resolvedAt: log.resolvedAt }).catch(console.error);
+      if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) getDbRef('fraudLogs').doc(log.id).update({ resolved: true, resolvedAt: log.resolvedAt }).catch(console.error);
     }
   }
 
   return {
-    getAll, getById, add, update, remove, save,
+    getAll, getById, add, update, remove,
     getCOA, getCOAByType, getCOAByCode, addCOA, updateCOA, removeCOA,
     updateCOABalance, recalculateCOA, calculatePeriodBalances,
     generateId, generateCode, formatCurrency, formatDate, formatDateTime,
@@ -551,7 +566,7 @@ TMS.Store = (() => {
       user.id = generateId(); 
       data.users.push(user); 
       saveData(data); 
-      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('users').doc(user.id).set(user).catch(console.error);
+      if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) getDbRef('users').doc(user.id).set(user).catch(console.error);
       return user; 
     },
     updateUser: (id, updates) => {
@@ -559,13 +574,13 @@ TMS.Store = (() => {
       if (idx !== -1) { 
         data.users[idx] = { ...data.users[idx], ...updates }; 
         saveData(data); 
-        if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('users').doc(id).update(updates).catch(console.error);
+        if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) getDbRef('users').doc(id).update(updates).catch(console.error);
       }
     },
     removeUser: (id) => { 
       data.users = data.users.filter(u => u.id !== id); 
       saveData(data); 
-      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('users').doc(id).delete().catch(console.error);
+      if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) getDbRef('users').doc(id).delete().catch(console.error);
     },
     initFirebase,
     setCurrentTenantId, getTenantId

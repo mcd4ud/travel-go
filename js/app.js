@@ -467,8 +467,8 @@ TMS.App = (() => {
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', async () => {
-  if (window.TMS && TMS.Firebase) {
-    TMS.Firebase.init();
+  if (window.TMS && window.TMS.Firebase) {
+    window.TMS.Firebase.init();
     if (TMS.Store && TMS.Store.initFirebase) {
       await TMS.Store.initFirebase();
     }

@@ -9,9 +9,9 @@ TMS.Auth = (() => {
     let users = TMS.Store.getUsers();
     
     // Fallback: fetch directly from Firebase if store hasn't initialized users yet
-    if ((!users || users.length === 0) && window.TMS && TMS.Firebase && TMS.Firebase.getDB()) {
+    if ((!users || users.length === 0) && window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) {
       try {
-        const snap = await TMS.Firebase.getDB().collection('users').get();
+        const snap = await window.TMS.Firebase.getDB().collection('users').get();
         users = snap.docs.map(d => d.data());
       } catch (e) {
         console.error("Gagal mengambil users dari Firebase", e);
