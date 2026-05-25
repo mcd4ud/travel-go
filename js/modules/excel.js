@@ -115,5 +115,18 @@ TMS.Excel = (() => {
     reader.readAsArrayBuffer(file);
   }
 
-  return { exportData, triggerImport };
+  function exportReport(title, headers, rows) {
+    if (typeof XLSX === 'undefined') {
+      alert("SheetJS library is not loaded.");
+      return;
+    }
+    const wsData = [headers, ...rows];
+    const worksheet = XLSX.utils.aoa_to_sheet(wsData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
+    XLSX.writeFile(workbook, `${title.replace(/\s+/g, '_')}.xlsx`);
+    TMS.App.showToast(`Berhasil mengekspor ${title}`);
+  }
+
+  return { exportData, triggerImport, exportReport };
 })();

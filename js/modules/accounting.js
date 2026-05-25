@@ -104,7 +104,10 @@ TMS.Accounting = (() => {
           <div class="card-title">Laporan Laba Rugi</div>
           <div class="card-subtitle">Periode: ${periodStr}</div>
         </div>
-        <button class="btn btn-primary" onclick="TMS.Accounting.downloadIncome()"><i data-lucide="download"></i> Unduh PDF</button>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="TMS.Accounting.exportIncomeExcel()"><i data-lucide="sheet"></i> Export Excel</button>
+          <button class="btn btn-primary" onclick="TMS.Accounting.downloadIncome()"><i data-lucide="download"></i> Unduh PDF</button>
+        </div>
       </div>
       <div class="card">
         <div class="table-container">
@@ -163,7 +166,10 @@ TMS.Accounting = (() => {
           <div class="card-title">Neraca (Balance Sheet)</div>
           <div class="card-subtitle">Per Tanggal: ${S.formatDate(endDate)}</div>
         </div>
-        <button class="btn btn-primary" onclick="TMS.Accounting.downloadBalance()"><i data-lucide="download"></i> Unduh PDF</button>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="TMS.Accounting.exportBalanceExcel()"><i data-lucide="sheet"></i> Export Excel</button>
+          <button class="btn btn-primary" onclick="TMS.Accounting.downloadBalance()"><i data-lucide="download"></i> Unduh PDF</button>
+        </div>
       </div>
       <div class="grid-2">
         <div class="card">
@@ -262,7 +268,10 @@ TMS.Accounting = (() => {
           <div class="card-title">Laporan Arus Kas</div>
           <div class="card-subtitle">Periode: ${S.formatDate(startDate)} - ${S.formatDate(endDate)}</div>
         </div>
-        <button class="btn btn-primary" onclick="TMS.Accounting.downloadCashFlow()"><i data-lucide="download"></i> Unduh PDF</button>
+        <div class="btn-group">
+          <button class="btn btn-secondary" onclick="TMS.Accounting.exportCashFlowExcel()"><i data-lucide="sheet"></i> Export Excel</button>
+          <button class="btn btn-primary" onclick="TMS.Accounting.downloadCashFlow()"><i data-lucide="download"></i> Unduh PDF</button>
+        </div>
       </div>
       <div class="card">
         <div class="table-container">
@@ -709,6 +718,23 @@ TMS.Accounting = (() => {
     TMS.PDF.generateFinancialReport('Laporan Laba Rugi', ['Keterangan', 'Kode Akun', 'Jumlah', 'Total'], rows, subtitle);
   }
 
+  function exportIncomeExcel() {
+    const d = getBalanceData();
+    const rows = [];
+    rows.push(['PENDAPATAN', '', '', '']);
+    d.coa.filter(a => a.type === 'revenue').forEach(a => rows.push(['  ' + a.name, a.code, a.balance, '']));
+    rows.push(['Total Pendapatan', '', '', d.totalRevenue]);
+    rows.push(['BEBAN POKOK PENJUALAN (BPP)', '', '', '']);
+    d.coa.filter(a => a.type === 'cogs').forEach(a => rows.push(['  ' + a.name, a.code, a.balance, '']));
+    rows.push(['Total BPP', '', '', -Math.abs(d.totalCOGS)]);
+    rows.push(['LABA KOTOR', '', '', d.grossProfit]);
+    rows.push(['BEBAN OPERASIONAL', '', '', '']);
+    d.coa.filter(a => a.type === 'expense').forEach(a => rows.push(['  ' + a.name, a.code, a.balance, '']));
+    rows.push(['Total Beban Operasional', '', '', -Math.abs(d.totalExpense)]);
+    rows.push(['LABA BERSIH', '', '', d.netProfit]);
+    TMS.Excel.exportReport('Laporan Laba Rugi', ['Keterangan', 'Kode Akun', 'Jumlah', 'Total'], rows);
+  }
+
   function downloadBalance() {
     const d = getBalanceData(true);
     const rows = [];
@@ -741,6 +767,37 @@ TMS.Accounting = (() => {
     TMS.PDF.generateFinancialReport('Neraca', ['Keterangan', 'Kode Akun', 'Nilai'], rows, subtitle);
   }
 
+  function exportBalanceExcel() {
+    const d = getBalanceData(true);
+    const rows = [];
+    rows.push(['ASET', '', '']);
+    
+    // Regular assets
+    d.coa.filter(a => a.type === 'asset' && a.code !== '1-1300' && !a.code.startsWith('1-1300-')).forEach(a => {
+      rows.push(['  ' + a.name, a.code, a.balance]);
+    });
+
+    // Parent deposit
+    const parentDeposit = d.coa.find(a => a.code === '1-1300');
+    if (parentDeposit) {
+      rows.push(['  ' + parentDeposit.name, parentDeposit.code, parentDeposit.balance]);
+      
+      // Sub deposits
+      d.coa.filter(a => a.code.startsWith('1-1300-')).forEach(sa => {
+        rows.push(['      - ' + sa.name, sa.code, sa.balance]);
+      });
+    }
+
+    rows.push(['TOTAL ASET', '', d.totalAsset]);
+    rows.push(['KEWAJIBAN', '', '']);
+    d.coa.filter(a => a.type === 'liability').forEach(a => rows.push(['  ' + a.name, a.code, a.balance]));
+    rows.push(['EKUITAS', '', '']);
+    d.coa.filter(a => a.type === 'equity').forEach(a => rows.push(['  ' + a.name, a.code, a.balance]));
+    rows.push(['  Laba Bersih Berjalan', '-', d.netProfit]);
+    rows.push(['TOTAL KEWAJIBAN + EKUITAS', '', d.totalLiability + d.totalEquity + d.netProfit]);
+    TMS.Excel.exportReport('Neraca', ['Keterangan', 'Kode Akun', 'Nilai'], rows);
+  }
+
   function downloadCashFlow() {
     const paidInvoices = S.getAll('invoices').filter(i => i.paymentStatus === 'paid');
     const totalReceived = paidInvoices.reduce((s, i) => s + (i.total || 0), 0);
@@ -756,6 +813,22 @@ TMS.Accounting = (() => {
     ];
     const subtitle = `Periode: ${S.formatDate(startDate)} - ${S.formatDate(endDate)}`;
     TMS.PDF.generateFinancialReport('Laporan Arus Kas', ['Keterangan', 'Jumlah'], rows, subtitle);
+  }
+
+  function exportCashFlowExcel() {
+    const paidInvoices = S.getAll('invoices').filter(i => i.paymentStatus === 'paid');
+    const totalReceived = paidInvoices.reduce((s, i) => s + (i.total || 0), 0);
+    const totalExpensePaid = S.getAll('expenses').reduce((s, e) => s + (e.amount || 0), 0);
+    const kasBalance = (S.getCOAByCode('1-1000')?.balance || 0) + (S.getCOAByCode('1-1001')?.balance || 0);
+    const rows = [
+      ['A. ARUS KAS OPERASIONAL', ''],
+      ['  Penerimaan dari Pelanggan', totalReceived],
+      ['  Pembayaran Beban Operasional', -Math.abs(totalExpensePaid)],
+      ['Arus Kas Bersih - Operasional', totalReceived - totalExpensePaid],
+      ['KENAIKAN KAS BERSIH', totalReceived - totalExpensePaid],
+      ['Saldo Kas & Bank Akhir', kasBalance],
+    ];
+    TMS.Excel.exportReport('Laporan Arus Kas', ['Keterangan', 'Jumlah'], rows);
   }
 
   function render(subpage) {
@@ -798,5 +871,5 @@ TMS.Accounting = (() => {
     }
   }
 
-  return { render, renderIncomeStatement, renderBalanceSheet, renderCashFlow, renderLedger, renderJournals, showForm, saveJournal, addEntryRow, calcJournalTotal, viewDetail, viewDetailByNumber, deleteJournal, downloadIncome, downloadBalance, downloadCashFlow, downloadVoucher, setPeriod, resetPeriod };
+  return { render, renderIncomeStatement, renderBalanceSheet, renderCashFlow, renderLedger, renderJournals, showForm, saveJournal, addEntryRow, calcJournalTotal, viewDetail, viewDetailByNumber, deleteJournal, downloadIncome, downloadBalance, downloadCashFlow, downloadVoucher, exportIncomeExcel, exportBalanceExcel, exportCashFlowExcel, setPeriod, resetPeriod };
 })();
