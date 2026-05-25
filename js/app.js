@@ -251,9 +251,9 @@ TMS.App = (() => {
       const pageKey = item.getAttribute('data-page');
       if (!pageKey) return;
       
-      // Khusus superadmin, sembunyikan semua kecuali superadmin
+      // Khusus superadmin, sembunyikan semua kecuali superadmin dan usermgmt
       if (isSuperAdmin) {
-        if (pageKey === 'superadmin') item.style.display = 'flex';
+        if (pageKey === 'superadmin' || pageKey === 'usermgmt') item.style.display = 'flex';
         else item.style.display = 'none';
         return;
       }

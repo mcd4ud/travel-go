@@ -186,6 +186,15 @@ TMS.Store = (() => {
     return db.collection('companies').doc(currentTenantId).collection(collectionName);
   }
 
+  function getQueryRef(collectionName) {
+    let ref = getDbRef(collectionName);
+    if (!ref) return null;
+    if (collectionName === 'users' && currentTenantId && currentTenantId !== 'SUPERADMIN') {
+      return ref.where('tenantId', '==', currentTenantId);
+    }
+    return ref;
+  }
+
   async function initFirebase() {
     const db = window.TMS && window.TMS.Firebase ? window.TMS.Firebase.getDB() : null;
     if (!db) return false;
@@ -220,17 +229,23 @@ TMS.Store = (() => {
         if (cntSnap.exists) data.counters = cntSnap.data();
         
         for (const coll of collections) {
-          const colSnap = await getDbRef(coll).get();
-          data[coll] = colSnap.docs.map(d => d.data());
+          const qRef = getQueryRef(coll);
+          if (qRef) {
+            const colSnap = await qRef.get();
+            data[coll] = colSnap.docs.map(d => d.data());
+          }
         }
         saveData(data);
       }
       
       // Setup realtime listeners
       collections.forEach(coll => {
-        getDbRef(coll).onSnapshot(snapshot => {
-          data[coll] = snapshot.docs.map(d => d.data());
-        });
+        const qRef = getQueryRef(coll);
+        if (qRef) {
+          qRef.onSnapshot(snapshot => {
+            data[coll] = snapshot.docs.map(d => d.data());
+          });
+        }
       });
       
       getDbRef('settings').doc('counters').onSnapshot(snap => {

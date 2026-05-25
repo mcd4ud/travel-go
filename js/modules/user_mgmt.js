@@ -73,6 +73,7 @@ TMS.UserMgmt = (() => {
                 <th>User ID (Username)</th>
                 <th>Role</th>
                 <th>Hak Akses Modul</th>
+                ${TMS.Store.getTenantId() === 'SUPERADMIN' ? '<th>Perusahaan (Tenant)</th>' : ''}
                 <th style="text-align:right;">Aksi</th>
               </tr>
             </thead>
@@ -115,11 +116,12 @@ TMS.UserMgmt = (() => {
                       }
                     </div>
                   </td>
+                  ${TMS.Store.getTenantId() === 'SUPERADMIN' ? `<td><span class="badge badge-info">${user.tenantId || '-'}</span></td>` : ''}
                   <td style="text-align:right;">
                     <button class="btn btn-ghost btn-icon" onclick="TMS.UserMgmt.showEditModal('${user.id}')" title="Edit User">
                       <i data-lucide="edit-3"></i>
                     </button>
-                    ${user.role !== 'admin' ? `
+                    ${user.role !== 'admin' || TMS.Store.getTenantId() === 'SUPERADMIN' ? `
                       <button class="btn btn-ghost btn-icon text-danger" onclick="TMS.UserMgmt.deleteUser('${user.id}')" title="Hapus User">
                         <i data-lucide="trash-2"></i>
                       </button>
@@ -167,6 +169,13 @@ TMS.UserMgmt = (() => {
                 </div>
               </div>
 
+              ${TMS.Store.getTenantId() === 'SUPERADMIN' ? `
+              <div style="margin-bottom:16px;">
+                <label class="form-label">Perusahaan (Tenant ID)</label>
+                <input type="text" id="userTenant" class="form-control" placeholder="Contoh: travelku" required>
+              </div>
+              ` : ''}
+
               <div id="permsSection" style="margin-top: 16px;">
                 <label class="form-label" style="display:block; margin-bottom:12px; border-bottom:1px solid var(--border-color); padding-bottom:8px; font-weight:700;">Hak Akses Modul & Fitur Sidebar</label>
                 ${renderPermissions()}
@@ -202,6 +211,10 @@ TMS.UserMgmt = (() => {
     document.getElementById('userUsername').value = user.username;
     document.getElementById('userPassword').value = user.password;
     document.getElementById('userRole').value = user.role;
+    if (TMS.Store.getTenantId() === 'SUPERADMIN') {
+      const tenantEl = document.getElementById('userTenant');
+      if(tenantEl) tenantEl.value = user.tenantId || '';
+    }
     
     // Set checkboxes
     const checks = document.querySelectorAll('input[name="permissions"]');
@@ -253,8 +266,18 @@ TMS.UserMgmt = (() => {
       const checks = document.querySelectorAll('input[name="permissions"]:checked');
       permissions = Array.from(checks).map(c => c.value);
     }
+    
+    let tenantId = TMS.Store.getTenantId();
+    if (tenantId === 'SUPERADMIN') {
+      const tenantEl = document.getElementById('userTenant');
+      tenantId = tenantEl ? tenantEl.value.trim() : '';
+      if (!tenantId) {
+        TMS.App.toast('Mohon masukkan ID Perusahaan (Tenant ID)', 'warning');
+        return;
+      }
+    }
 
-    const userData = { name, username, password, role, permissions };
+    const userData = { name, username, password, role, permissions, tenantId };
 
     if (id) {
       TMS.Store.updateUser(id, userData);
