@@ -165,14 +165,15 @@ TMS.App = (() => {
       html = TMS.Settings.render();
     } else if (hash === 'users') {
       const u = TMS.Store.getCurrentUser();
-      if (u && u.role === 'superadmin') {
+      // Superadmin atau Admin perusahaan bisa akses
+      if (u && (u.role === 'superadmin' || TMS.Auth.checkAccess('users'))) {
         html = TMS.UserMgmt.render();
       } else {
         html = `
           <div style="text-align:center; padding:40px;">
             <i data-lucide="shield-alert" style="width:48px;height:48px;color:var(--danger);margin-bottom:16px;"></i>
             <h3>Akses Ditolak</h3>
-            <p>Hanya Super Admin yang dapat mengakses halaman ini.</p>
+            <p>Anda tidak memiliki akses ke halaman ini.</p>
           </div>
         `;
       }
@@ -262,9 +263,9 @@ TMS.App = (() => {
       const pageKey = item.getAttribute('data-page');
       if (!pageKey) return;
       
-      // Khusus superadmin, sembunyikan semua kecuali superadmin dan users
+      // Khusus superadmin, sembunyikan semua kecuali superadmin, users, dan dashboard
       if (isSuperAdmin) {
-        if (pageKey === 'superadmin' || pageKey === 'users') item.style.display = 'flex';
+        if (pageKey === 'superadmin' || pageKey === 'users' || pageKey === 'dashboard') item.style.display = 'flex';
         else item.style.display = 'none';
         return;
       }
@@ -275,8 +276,8 @@ TMS.App = (() => {
         return;
       }
 
-      // Jangan tampilkan menu superadmin dan users untuk user biasa
-      if (pageKey === 'superadmin' || pageKey === 'users') {
+      // Jangan tampilkan menu superadmin untuk user biasa
+      if (pageKey === 'superadmin') {
         item.style.display = 'none';
         return;
       }
