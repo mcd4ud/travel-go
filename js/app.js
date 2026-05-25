@@ -215,12 +215,16 @@ TMS.App = (() => {
   function updateBrandUI() {
     try {
       const s = TMS.Store.getSettings() || {};
+      const user = TMS.Store.getCurrentUser();
       const titleEl = document.getElementById('appSidebarTitle');
       const footerCompany = document.getElementById('footerCompanyText');
       const logoImg = document.getElementById('appSidebarLogo');
       const breadcrumb = document.querySelector('.topbar-breadcrumb');
-
-      const companyName = s.companyName || 'Travel Go';
+      
+      let companyName = s.companyName || 'Travel Go';
+      if (user && user.role === 'superadmin') {
+        companyName = 'Super Admin TMS';
+      }
 
       if (titleEl) titleEl.textContent = 'Travel Go';
       if (footerCompany) footerCompany.textContent = companyName;
