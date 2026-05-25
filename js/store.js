@@ -180,18 +180,18 @@ TMS.Store = (() => {
     const collections = ['flights', 'hotels', 'rentals', 'tours', 'invoices', 'refunds', 'journals', 'expenses', 'payments', 'customers', 'vendors', 'airlines', 'airports', 'coa', 'users', 'fraudLogs'];
 
     try {
-      const snap = await db.collection('settings').doc('config').get();
+      const snap = await getDbRef('settings').doc('config').get();
       if (!snap.exists) {
         console.log('Firebase kosong. Melakukan sinkronisasi data lokal ke cloud...');
-        await db.collection('settings').doc('config').set(data.settings || {});
-        await db.collection('settings').doc('counters').set(data.counters || {});
+        await getDbRef('settings').doc('config').set(data.settings || {});
+        await getDbRef('settings').doc('counters').set(data.counters || {});
         
         for (const coll of collections) {
           if (data[coll] && data[coll].length > 0) {
             const batch = db.batch();
             data[coll].forEach(item => {
               if (!item.id) item.id = item.code || generateId();
-              const docRef = db.collection(coll).doc(item.id);
+              const docRef = getDbRef(coll).doc(item.id);
               batch.set(docRef, item);
             });
             await batch.commit();
@@ -201,11 +201,11 @@ TMS.Store = (() => {
       } else {
         console.log('Memuat data cloud ke memori...');
         data.settings = snap.data();
-        const cntSnap = await db.collection('settings').doc('counters').get();
+        const cntSnap = await getDbRef('settings').doc('counters').get();
         if (cntSnap.exists) data.counters = cntSnap.data();
         
         for (const coll of collections) {
-          const colSnap = await db.collection(coll).get();
+          const colSnap = await getDbRef(coll).get();
           data[coll] = colSnap.docs.map(d => d.data());
         }
         saveData(data);
@@ -213,15 +213,15 @@ TMS.Store = (() => {
       
       // Setup realtime listeners
       collections.forEach(coll => {
-        db.collection(coll).onSnapshot(snapshot => {
+        getDbRef(coll).onSnapshot(snapshot => {
           data[coll] = snapshot.docs.map(d => d.data());
         });
       });
       
-      db.collection('settings').doc('counters').onSnapshot(snap => {
+      getDbRef('settings').doc('counters').onSnapshot(snap => {
         if (snap.exists) data.counters = snap.data();
       });
-      db.collection('settings').doc('config').onSnapshot(snap => {
+      getDbRef('settings').doc('config').onSnapshot(snap => {
         if (snap.exists) data.settings = snap.data();
       });
       
@@ -238,7 +238,7 @@ TMS.Store = (() => {
     data.counters[prefix] = (data.counters[prefix] || 0) + 1;
     saveData(data);
     if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) {
-        TMS.Firebase.getDB().collection('settings').doc('counters').set(data.counters).catch(console.error);
+        getDbRef('settings').doc('counters').set(data.counters).catch(console.error);
     }
     const num = String(data.counters[prefix]).padStart(5, '0');
     const prefixMap = { flight: 'FLT', hotel: 'HTL', rental: 'RNT', tour: 'TOR', invoice: 'INV', refund: 'RFD', journal: 'JRN', expense: 'EXP', customer: 'CST', vendor: 'VND', db_hotel: 'DBH', db_rental: 'DBR' };
@@ -269,7 +269,7 @@ TMS.Store = (() => {
     data[collection].push(item);
     saveData(data);
     if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) {
-       TMS.Firebase.getDB().collection(collection).doc(item.id).set(item).catch(console.error);
+       getDbRef(collection).doc(item.id).set(item).catch(console.error);
     }
     return item;
   }
@@ -280,7 +280,7 @@ TMS.Store = (() => {
     data[collection][idx] = { ...data[collection][idx], ...updates, updatedAt: new Date().toISOString() };
     saveData(data);
     if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) {
-       TMS.Firebase.getDB().collection(collection).doc(id).update(updates).catch(console.error);
+       getDbRef(collection).doc(id).update(updates).catch(console.error);
     }
     return data[collection][idx];
   }
@@ -289,7 +289,7 @@ TMS.Store = (() => {
     data[collection] = data[collection].filter(item => item.id !== id);
     saveData(data);
     if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) {
-       TMS.Firebase.getDB().collection(collection).doc(id).delete().catch(console.error);
+       getDbRef(collection).doc(id).delete().catch(console.error);
     }
   }
 
@@ -301,14 +301,14 @@ TMS.Store = (() => {
     if (!account.id) account.id = account.code || generateId();
     data.coa.push(account); 
     saveData(data); 
-    if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) TMS.Firebase.getDB().collection('coa').doc(account.id).set(account).catch(console.error);
+    if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('coa').doc(account.id).set(account).catch(console.error);
   }
   function updateCOA(code, updates) {
     const idx = data.coa.findIndex(a => a.code === code);
     if (idx !== -1) { 
       data.coa[idx] = { ...data.coa[idx], ...updates }; 
       saveData(data); 
-      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) TMS.Firebase.getDB().collection('coa').doc(data.coa[idx].id || code).update(updates).catch(console.error);
+      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('coa').doc(data.coa[idx].id || code).update(updates).catch(console.error);
     }
   }
   function removeCOA(code) {
@@ -316,7 +316,7 @@ TMS.Store = (() => {
     const id = acc ? (acc.id || code) : code;
     data.coa = data.coa.filter(a => a.code !== code);
     saveData(data);
-    if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) TMS.Firebase.getDB().collection('coa').doc(id).delete().catch(console.error);
+    if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('coa').doc(id).delete().catch(console.error);
   }
 
   // Update COA balance
@@ -325,7 +325,7 @@ TMS.Store = (() => {
     if (acc) { 
       acc.balance = (acc.balance || 0) + amount; 
       saveData(data); 
-      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) TMS.Firebase.getDB().collection('coa').doc(acc.id || code).update({ balance: acc.balance }).catch(console.error);
+      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('coa').doc(acc.id || code).update({ balance: acc.balance }).catch(console.error);
     }
   }
 
@@ -415,7 +415,7 @@ TMS.Store = (() => {
     saveData(data); 
     if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) {
       try {
-        await TMS.Firebase.getDB().collection('settings').doc('config').set(data.settings);
+        await getDbRef('settings').doc('config').set(data.settings);
       } catch (err) {
         console.error("Firebase updateSettings error:", err);
         alert("Gagal menyimpan ke database online. Pastikan koneksi internet stabil dan Database Firebase sudah diaktifkan. Error: " + err.message);
@@ -519,7 +519,7 @@ TMS.Store = (() => {
       if (!data.fraudLogs) data.fraudLogs = [];
       data.fraudLogs.push(log);
       saveData(data);
-      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) TMS.Firebase.getDB().collection('fraudLogs').doc(log.id).set(log).catch(console.error);
+      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('fraudLogs').doc(log.id).set(log).catch(console.error);
     }
     return flags;
   }
@@ -532,12 +532,12 @@ TMS.Store = (() => {
       log.resolved = true; 
       log.resolvedAt = new Date().toISOString(); 
       saveData(data); 
-      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) TMS.Firebase.getDB().collection('fraudLogs').doc(log.id).update({ resolved: true, resolvedAt: log.resolvedAt }).catch(console.error);
+      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('fraudLogs').doc(log.id).update({ resolved: true, resolvedAt: log.resolvedAt }).catch(console.error);
     }
   }
 
   return {
-    getAll, getById, add, update, remove,
+    getAll, getById, add, update, remove, save,
     getCOA, getCOAByType, getCOAByCode, addCOA, updateCOA, removeCOA,
     updateCOABalance, recalculateCOA, calculatePeriodBalances,
     generateId, generateCode, formatCurrency, formatDate, formatDateTime,
@@ -551,7 +551,7 @@ TMS.Store = (() => {
       user.id = generateId(); 
       data.users.push(user); 
       saveData(data); 
-      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) TMS.Firebase.getDB().collection('users').doc(user.id).set(user).catch(console.error);
+      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('users').doc(user.id).set(user).catch(console.error);
       return user; 
     },
     updateUser: (id, updates) => {
@@ -559,15 +559,16 @@ TMS.Store = (() => {
       if (idx !== -1) { 
         data.users[idx] = { ...data.users[idx], ...updates }; 
         saveData(data); 
-        if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) TMS.Firebase.getDB().collection('users').doc(id).update(updates).catch(console.error);
+        if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('users').doc(id).update(updates).catch(console.error);
       }
     },
     removeUser: (id) => { 
       data.users = data.users.filter(u => u.id !== id); 
       saveData(data); 
-      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) TMS.Firebase.getDB().collection('users').doc(id).delete().catch(console.error);
+      if (window.TMS && TMS.Firebase && TMS.Firebase.getDB()) getDbRef('users').doc(id).delete().catch(console.error);
     },
-    initFirebase
+    initFirebase,
+    setCurrentTenantId, getTenantId
   };
 })();
 

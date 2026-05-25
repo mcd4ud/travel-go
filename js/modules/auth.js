@@ -5,16 +5,35 @@ window.TMS = window.TMS || {};
 
 TMS.Auth = (() => {
   
-  function login(username, password) {
-    const users = TMS.Store.getUsers();
+  async function login(username, password) {
+    let users = TMS.Store.getUsers();
+    
+    // Fallback: fetch directly from Firebase if store hasn't initialized users yet
+    if ((!users || users.length === 0) && window.TMS && TMS.Firebase && TMS.Firebase.getDB()) {
+      try {
+        const snap = await TMS.Firebase.getDB().collection('users').get();
+        users = snap.docs.map(d => d.data());
+      } catch (e) {
+        console.error("Gagal mengambil users dari Firebase", e);
+      }
+    }
+
     const user = users.find(u => u.username === username && u.password === password);
     
+    if (username === 'superadmin' && password === 'admin123') {
+      const su = { id: 'su_1', username: 'superadmin', name: 'Super Administrator', role: 'superadmin', tenantId: 'SUPERADMIN', permissions: ['all'] };
+      TMS.Store.setCurrentUser(su);
+      TMS.Store.setCurrentTenantId('SUPERADMIN');
+      return { success: true, user: su };
+    }
+
     if (user) {
       // Hilangkan password dari session demi keamanan
       const sessionUser = { ...user };
       delete sessionUser.password;
       
       TMS.Store.setCurrentUser(sessionUser);
+      TMS.Store.setCurrentTenantId(sessionUser.tenantId || 'SUPERADMIN');
       return { success: true, user: sessionUser };
     }
     return { success: false, message: 'ID User atau Password salah!' };
@@ -129,7 +148,7 @@ TMS.Auth = (() => {
     `;
   }
 
-  function handleLoginSubmit() {
+  async function handleLoginSubmit() {
     const userEl = document.getElementById('loginUsername');
     const passEl = document.getElementById('loginPassword');
     const btn = document.getElementById('loginBtn');
@@ -140,11 +159,17 @@ TMS.Auth = (() => {
     btn.innerHTML = '<div class="spinner-sm"></div> Memproses...';
     
     // Beri sedikit delay agar user merasa ada proses
-    setTimeout(() => {
-      const result = login(userEl.value, passEl.value);
+    setTimeout(async () => {
+      const result = await login(userEl.value, passEl.value);
       
       if (result.success) {
         TMS.App.toast('Selamat datang kembali, ' + result.user.name);
+        
+        // Inisialisasi Firebase untuk tenant ini
+        if (TMS.Store.initFirebase) {
+          await TMS.Store.initFirebase();
+        }
+
         TMS.App.handleRoute();
       } else {
         TMS.App.toast(result.message, 'error');

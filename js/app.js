@@ -27,6 +27,7 @@ TMS.App = (() => {
     'settings': { title: 'Pengaturan Sistem', icon: 'settings', module: 'Settings' },
     'users': { title: 'Manajemen User & Akses', icon: 'user-cog', module: 'UserMgmt' },
     'database': { title: 'Database Maskapai & Bandara', icon: 'database', module: 'Database' },
+    'superadmin': { title: 'Super Admin Dashboard', icon: 'shield', module: 'SuperAdmin' },
   };
 
   function navigate(page) {
@@ -92,9 +93,13 @@ TMS.App = (() => {
 
     let hash = window.location.hash.replace('#', '');
     if (!hash) {
-      hash = 'dashboard'; // langsung render, tidak perlu tunggu hashchange
+      if (user && user.role === 'superadmin') {
+        hash = 'superadmin';
+      } else {
+        hash = 'dashboard';
+      }
     }
-    const page = PAGES[hash] || PAGES['dashboard'];
+    const page = PAGES[hash] || (user && user.role === 'superadmin' ? PAGES['superadmin'] : PAGES['dashboard']);
 
     // 4. Cek Hak Akses Halaman
     const baseHash = hash.split('/')[0];
@@ -162,6 +167,8 @@ TMS.App = (() => {
       html = TMS.UserMgmt.render();
     } else if (hash === 'database') {
       html = TMS.Database.render();
+    } else if (hash === 'superadmin') {
+      html = TMS.SuperAdmin ? TMS.SuperAdmin.render() : '<h3>SuperAdmin module not found</h3>';
     }
 
     content.innerHTML = html;
@@ -233,9 +240,22 @@ TMS.App = (() => {
       const pageKey = item.getAttribute('data-page');
       if (!pageKey) return;
       
-      // Dashboard selalu boleh dilihat
+      // Khusus superadmin, sembunyikan semua kecuali superadmin
+      if (user && user.role === 'superadmin') {
+        if (pageKey === 'superadmin') item.style.display = 'flex';
+        else item.style.display = 'none';
+        return;
+      }
+      
+      // Dashboard selalu boleh dilihat user biasa
       if (pageKey === 'dashboard') {
         item.style.display = 'flex';
+        return;
+      }
+
+      // Jangan tampilkan menu superadmin untuk user biasa
+      if (pageKey === 'superadmin') {
+        item.style.display = 'none';
         return;
       }
       
