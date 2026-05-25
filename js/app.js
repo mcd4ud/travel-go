@@ -240,12 +240,19 @@ TMS.App = (() => {
   }
 
   function updateSidebar(user) {
+    const isSuperAdmin = user && user.role === 'superadmin';
+    
+    // Hide nav-section headers for superadmin
+    document.querySelectorAll('.nav-section').forEach(section => {
+      section.style.display = isSuperAdmin ? 'none' : 'block';
+    });
+
     document.querySelectorAll('.nav-item').forEach(item => {
       const pageKey = item.getAttribute('data-page');
       if (!pageKey) return;
       
       // Khusus superadmin, sembunyikan semua kecuali superadmin
-      if (user && user.role === 'superadmin') {
+      if (isSuperAdmin) {
         if (pageKey === 'superadmin') item.style.display = 'flex';
         else item.style.display = 'none';
         return;

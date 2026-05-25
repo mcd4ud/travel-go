@@ -90,10 +90,10 @@ TMS.SuperAdmin = (() => {
   
   function showAddCompany() {
     const html = `
-      <div class="modal fade-in" id="saModal">
-        <div class="modal-content" style="max-width:500px;">
+      <div class="modal-overlay fade-in active" id="saModal">
+        <div class="modal" style="max-width:500px;">
           <div class="modal-header">
-            <h3>Tambah Perusahaan Baru</h3>
+            <span class="modal-title">Tambah Perusahaan Baru</span>
             <button class="modal-close" onclick="document.getElementById('saModal').remove()">✕</button>
           </div>
           <div class="modal-body">
@@ -171,5 +171,27 @@ TMS.SuperAdmin = (() => {
     }
   }
 
-  return { render, showAddCompany, saveCompany };
+  async function editCompany(id) {
+    const comp = companies.find(c => c.id === id);
+    if (!comp) return;
+    
+    const db = window.TMS && window.TMS.Firebase ? window.TMS.Firebase.getDB() : null;
+    if (!db) return;
+    
+    const newStatus = !comp.isActive;
+    const confirmMsg = newStatus ? `Aktifkan kembali perusahaan ${comp.name}?` : `Nonaktifkan perusahaan ${comp.name}?\nPengguna dari perusahaan ini tidak akan bisa login.`;
+    
+    if (confirm(confirmMsg)) {
+      try {
+        await db.collection('companies').doc(id).update({ isActive: newStatus });
+        TMS.App.toast(`Status perusahaan ${comp.name} berhasil diubah.`);
+        loadData();
+      } catch (e) {
+        console.error(e);
+        alert('Gagal mengubah status perusahaan');
+      }
+    }
+  }
+
+  return { render, showAddCompany, saveCompany, editCompany };
 })();
