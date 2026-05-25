@@ -1,0 +1,5 @@
+[build]
+  # Perintah ignore dengan 'exit 0' akan selalu mengembalikan status true
+  # Netlify akan menganggap tidak ada perubahan yang perlu di-build
+  # sehingga proses build dibatalkan dan tidak memakan build minutes (kredit).
+  ignore = "exit 0"
