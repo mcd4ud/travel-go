@@ -115,7 +115,7 @@ TMS.Auth = (() => {
         <div class="card" style="width:100%;max-width:380px;padding:40px;box-shadow:0 20px 50px rgba(0,0,0,0.3);border-radius:24px;background:var(--bg-card);border:2px solid var(--primary);">
           <div style="text-align:center;margin-bottom:32px;">
             <img src="${logoSrc}?v=4" style="width:180px;height:auto;object-fit:contain;margin:0 auto 16px;display:block;border-radius:0;background:transparent;" alt="Logo">
-            <h1 style="font-size:24px;font-weight:800;margin-bottom:8px;color:var(--text-main);">${compName}</h1>
+            <h1 style="display:none;font-size:24px;font-weight:800;margin-bottom:8px;color:var(--text-main);">${compName}</h1>
             <p class="text-muted" style="font-size:14px;">Silakan login untuk mengakses sistem</p>
           </div>
           
@@ -158,25 +158,25 @@ TMS.Auth = (() => {
     btn.disabled = true;
     btn.innerHTML = '<div class="spinner-sm"></div> Memproses...';
     
-    // Beri sedikit delay agar user merasa ada proses
-    setTimeout(async () => {
-      const result = await login(userEl.value, passEl.value);
+    // Langsung proses tanpa delay untuk respon cepat
+    const result = login(userEl.value, passEl.value);
+    
+    if (result.success) {
+      TMS.App.toast('Selamat datang kembali, ' + result.user.name);
       
-      if (result.success) {
-        TMS.App.toast('Selamat datang kembali, ' + result.user.name);
-        
-        // Inisialisasi Firebase untuk tenant ini
-        if (TMS.Store.initFirebase) {
-          await TMS.Store.initFirebase();
-        }
-
-        TMS.App.handleRoute();
+      // Inisialisasi Firebase untuk tenant ini
+      if (TMS.Store.initFirebase) {
+        TMS.Store.initFirebase().then(() => {
+          TMS.App.handleRoute();
+        });
       } else {
-        TMS.App.toast(result.message, 'error');
-        btn.disabled = false;
-        btn.innerHTML = 'Masuk ke Sistem';
+        TMS.App.handleRoute();
       }
-    }, 600);
+    } else {
+      TMS.App.toast(result.message, 'error');
+      btn.disabled = false;
+      btn.innerHTML = 'Masuk ke Sistem';
+    }
   }
 
   return { login, logout, checkAccess, renderLogin, handleLoginSubmit };
