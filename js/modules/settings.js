@@ -58,7 +58,64 @@ TMS.Settings = (() => {
                 <span class="input-prefix" style="border-left:1px solid var(--border-color);border-right:none;padding-left:12px;">%</span>
               </div>
             </div>
-            <div class="form-actions">
+
+            <!-- SEKSI PENGATURAN FORMAT PENOMORAN -->
+            <div style="border-top:1px dashed var(--border-color); margin:20px 0; padding-top:15px;">
+              <h4 style="font-size:14px; font-weight:700; color:var(--primary); margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+                <i data-lucide="hash" style="width:16px;height:16px;"></i> Format Penomoran (Itinerary ID / Referensi)
+              </h4>
+              
+              <div class="form-group">
+                <label class="form-label">Tipe Format Penomoran</label>
+                <select class="form-control" name="numberingFormat" onchange="TMS.Settings.toggleCustomNumbering(this.value)">
+                  <option value="PREFIX-DDMMYYYYURUT" ${s.numberingFormat !== 'standar' ? 'selected' : ''}>Default Baru: PREFIX-DDMMYYYYxxxxx (Contoh: FLT-3105202600001)</option>
+                  <option value="standar" ${s.numberingFormat === 'standar' ? 'selected' : ''}>Standar Lama: PREFIX-xxxxx (Contoh: FLT-00001)</option>
+                </select>
+                <div class="form-help">Mempengaruhi format kode pada Tiket Pesawat, Voucher Hotel, Rental Mobil, Paket Wisata, Umroh, Faktur, Jurnal Buku Besar, dll.</div>
+              </div>
+
+              <div id="customNumberingPanel" style="background:var(--bg-secondary); padding:12px; border-radius:10px; margin-bottom:15px; ${s.numberingFormat === 'standar' ? 'display:none;' : ''}">
+                <div class="form-group" style="margin-bottom:10px;">
+                  <label class="form-label" style="font-size:12px; font-weight: 600;">Komponen Suffix Tanggal:</label>
+                  <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:5px;">
+                    <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
+                      <input type="checkbox" name="numberingIncludeDate" value="true" ${s.numberingIncludeDate !== false ? 'checked' : ''} style="width:16px;height:16px;">
+                      Hari (DD)
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
+                      <input type="checkbox" name="numberingIncludeMonth" value="true" ${s.numberingIncludeMonth !== false ? 'checked' : ''} style="width:16px;height:16px;">
+                      Bulan (MM)
+                    </label>
+                    <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer;">
+                      <input type="checkbox" name="numberingIncludeYear" value="true" ${s.numberingIncludeYear !== false ? 'checked' : ''} style="width:16px;height:16px;">
+                      Tahun (YYYY)
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-row" style="margin-bottom:0;">
+                  <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label" style="font-size:12px; font-weight: 600;">Jumlah Digit Nomor Urut</label>
+                    <select class="form-control" name="numberingDigits">
+                      <option value="4" ${s.numberingDigits == 4 ? 'selected' : ''}>4 Digit (xxxx)</option>
+                      <option value="5" ${s.numberingDigits == 5 || !s.numberingDigits ? 'selected' : ''}>5 Digit (xxxxx)</option>
+                      <option value="6" ${s.numberingDigits == 6 ? 'selected' : ''}>6 Digit (xxxxxx)</option>
+                      <option value="7" ${s.numberingDigits == 7 ? 'selected' : ''}>7 Digit (xxxxxxx)</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group" style="margin-bottom:0; display:flex; align-items:flex-end; padding-bottom:8px;">
+                    <label style="display:flex; align-items:center; gap:8px; font-size:12px; cursor:pointer; user-select: none;">
+                      <input type="checkbox" name="numberingResetYearly" value="true" ${s.numberingResetYearly !== false ? 'checked' : ''} style="width:16px;height:16px;">
+                      Reset Urutan Tiap Tahun Baru
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions" style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+              <button type="button" class="btn btn-outline btn-danger" onclick="TMS.Settings.resetCompanyInfo()"><i data-lucide="refresh-cw"></i> Reset Info Perusahaan</button>
               <button type="submit" class="btn btn-primary"><i data-lucide="save"></i> Simpan Perubahan</button>
             </div>
           </form>
@@ -69,10 +126,7 @@ TMS.Settings = (() => {
             <div class="card-header"><div class="card-title"><i data-lucide="database"></i> Pemeliharaan Data</div></div>
             <div class="p-2">
               <p class="text-muted mb-2" style="font-size:13px;">Hapus data transaksi (Tiket, Hotel, Jurnal, dll) namun tetap simpan data perusahaan & COA.</p>
-              <button class="btn btn-warning btn-block mb-1" onclick="TMS.Settings.clearTransactions()"><i data-lucide="trash-2"></i> Bersihkan Data Transaksi</button>
-              <div style="border-top:1px dashed var(--border-color); margin:10px 0;"></div>
-              <p class="text-muted mb-2" style="font-size:13px;">Hapus semua data termasuk pengaturan untuk kembali ke titik nol.</p>
-              <button class="btn btn-danger btn-block" onclick="TMS.Settings.reset()"><i data-lucide="refresh-cw"></i> Reset Semua Data (Total)</button>
+              <button class="btn btn-warning btn-block" onclick="TMS.Settings.clearTransactions()"><i data-lucide="trash-2"></i> Bersihkan Data Transaksi</button>
             </div>
           </div>
           
@@ -111,6 +165,12 @@ TMS.Settings = (() => {
     data.taxEnabled = fd.get('taxEnabled') === 'true';
     data.taxRate = parseFloat(data.taxRate) || 0;
     
+    // Parse custom numbering checkbox states
+    data.numberingIncludeDate = fd.get('numberingIncludeDate') === 'true';
+    data.numberingIncludeMonth = fd.get('numberingIncludeMonth') === 'true';
+    data.numberingIncludeYear = fd.get('numberingIncludeYear') === 'true';
+    data.numberingResetYearly = fd.get('numberingResetYearly') === 'true';
+    
     // Disable button to prevent double clicks during network request
     const btn = e.target.querySelector('button[type="submit"]');
     if (btn) { btn.disabled = true; btn.innerHTML = '<div style="width:16px;height:16px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite;display:inline-block;vertical-align:middle;margin-right:8px;"></div> Menyimpan...'; }
@@ -122,18 +182,73 @@ TMS.Settings = (() => {
     setTimeout(() => location.reload(), 1500);
   }
 
-  function reset() {
-    if (!confirm('PERINGATAN: Semua data (termasuk profil perusahaan) akan dihapus permanen! Lanjutkan?')) return;
-    if (!confirm('Konfirmasi terakhir: Anda yakin?')) return;
-    S.resetData();
-    TMS.App.toast('Sistem berhasil di-reset total', 'warning');
+  async function resetCompanyInfo() {
+    if (!confirm('Apakah Anda yakin ingin menghapus keseluruhan informasi perusahaan dan mengembalikannya ke kondisi kosong seperti awal?')) return;
+    
+    const btn = document.querySelector('button[onclick*="resetCompanyInfo"]');
+    let originalHTML = '';
+    if (btn) {
+      originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-sm"></span> Mereset...';
+    }
+    
+    const cleanSettings = {
+      companyName: '',
+      companyAddress: '',
+      companyPhone: '',
+      companyEmail: '',
+      companyLogo: '',
+      taxEnabled: true,
+      taxRate: 11,
+      numberingFormat: 'standar',
+      numberingDigits: 5,
+      numberingIncludeDate: false,
+      numberingIncludeMonth: false,
+      numberingIncludeYear: false,
+      numberingResetYearly: false
+    };
+
+    try {
+      await S.updateSettings(cleanSettings);
+      TMS.App.toast('Informasi perusahaan berhasil di-reset ke kondisi kosong', 'success');
+    } catch (err) {
+      console.error(err);
+      TMS.App.toast('Gagal melakukan reset informasi perusahaan: ' + err.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }
+    }
+    
     setTimeout(() => location.reload(), 1000);
   }
 
-  function clearTransactions() {
+  async function clearTransactions() {
     if (!confirm('Hapus semua data transaksi? Profil perusahaan dan susunan akun (COA) akan tetap disimpan.')) return;
-    S.clearAllData();
-    TMS.App.toast('Data transaksi berhasil dibersihkan', 'success');
+    
+    const btn = document.querySelector('button[onclick*="clearTransactions"]');
+    let originalHTML = '';
+    if (btn) {
+      originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-sm"></span> Membersihkan...';
+    }
+    
+    try {
+      await S.clearAllData();
+      TMS.App.toast('Data transaksi berhasil dibersihkan', 'success');
+    } catch (err) {
+      console.error(err);
+      TMS.App.toast('Gagal membersihkan data transaksi: ' + err.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }
+    }
+    
     setTimeout(() => location.reload(), 1000);
   }
 
@@ -150,5 +265,12 @@ TMS.Settings = (() => {
     reader.readAsDataURL(file);
   }
 
-  return { render, save, reset, clearTransactions, handleLogo };
+  function toggleCustomNumbering(val) {
+    const panel = document.getElementById('customNumberingPanel');
+    if (panel) {
+      panel.style.display = val === 'standar' ? 'none' : 'block';
+    }
+  }
+ 
+  return { render, save, resetCompanyInfo, clearTransactions, handleLogo, toggleCustomNumbering };
 })();

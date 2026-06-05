@@ -5,29 +5,108 @@ window.TMS = window.TMS || {};
 
 TMS.Auth = (() => {
   
-  async function login(username, password) {
-    let users = TMS.Store.getUsers();
+  async function hashPassword(password) {
+    if (!password) return '';
     
-    // Fallback: fetch directly from Firebase if store hasn't initialized users yet
-    if ((!users || users.length === 0) && window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) {
+    // Jika kata sandi sudah berupa hash SHA-256 (64 karakter heksadesimal), kembalikan langsung
+    if (/^[0-9a-f]{64}$/i.test(password)) {
+      return password;
+    }
+    
+    try {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return hashHex;
+    } catch(e) {
+      console.warn("Natif crypto.subtle gagal, menggunakan fallback hashing sederhana (insecure but offline compatible):", e);
+      // Fallback: DJB2 hash sederhana (agar tetap berfungsi jika dalam lingkungan non-HTTPS tanpa crypto API)
+      let hash = 5381;
+      for (let i = 0; i < password.length; i++) {
+        hash = ((hash << 5) + hash) + password.charCodeAt(i);
+      }
+      return (hash >>> 0).toString(16).padStart(16, '0');
+    }
+  }
+
+  async function login(username, password) {
+    let user = null;
+    let isPlaintextMatch = false;
+    const hashedEnteredPassword = await hashPassword(password);
+
+    // 1. Coba cari langsung dari Firestore (Source of truth) untuk seluruh tenant
+    if (window.TMS && window.TMS.Firebase && window.TMS.Firebase.getDB()) {
       try {
-        const snap = await window.TMS.Firebase.getDB().collection('users').get();
-        users = snap.docs.map(d => d.data());
+        const snap = await window.TMS.Firebase.getDB().collection('users').where('username', '==', username).get();
+        const firestoreUsers = snap.docs.map(d => d.data());
+        
+        // Cari yang cocok dengan hash
+        user = firestoreUsers.find(u => u.password === hashedEnteredPassword);
+        
+        // Jika tidak ditemukan, coba cari yang cocok dengan plain text (untuk migrasi otomatis)
+        if (!user) {
+          user = firestoreUsers.find(u => u.password === password);
+          if (user) {
+            isPlaintextMatch = true;
+          }
+        }
       } catch (e) {
-        console.error("Gagal mengambil users dari Firebase", e);
+        console.error("Gagal melakukan query user langsung dari Firestore:", e);
       }
     }
 
-    const user = users.find(u => u.username === username && u.password === password);
+    // 2. Jika offline / Firestore gagal, gunakan data lokal sebagai fallback
+    if (!user) {
+      let localUsers = TMS.Store.getUsers();
+      user = localUsers.find(u => u.username === username && u.password === hashedEnteredPassword);
+      if (!user) {
+        user = localUsers.find(u => u.username === username && u.password === password);
+        if (user) {
+          isPlaintextMatch = true;
+        }
+      }
+    }
     
-    if (username === 'superadmin' && password === 'admin123') {
-      const su = { id: 'su_1', username: 'superadmin', name: 'Super Administrator', role: 'superadmin', tenantId: 'SUPERADMIN', permissions: ['all'] };
+    // 3. Khusus superadmin bypass (menggunakan kredensial superadmin dinamis dari Store)
+    const saConfig = TMS.Store.getSuperadminConfig();
+    const isSaUsernameMatch = username === saConfig.username;
+    let isSaPasswordMatch = hashedEnteredPassword === saConfig.password;
+    let isSaPlaintextMatch = false;
+    
+    if (!isSaPasswordMatch && password === saConfig.password) {
+      isSaPasswordMatch = true;
+      isSaPlaintextMatch = true;
+    }
+
+    if (isSaUsernameMatch && isSaPasswordMatch) {
+      if (isSaPlaintextMatch) {
+        try {
+          TMS.Store.updateSuperadminConfig({ password: hashedEnteredPassword });
+          console.log("Kata sandi superadmin berhasil dimigrasikan ke hash SHA-256.");
+        } catch(err) {
+          console.warn("Gagal menyimpan migrasi password superadmin secara asinkron:", err);
+        }
+      }
+      const su = { id: 'su_1', username: saConfig.username, name: 'Super Administrator', role: 'superadmin', tenantId: 'SUPERADMIN', permissions: ['all'] };
       TMS.Store.setCurrentUser(su);
       TMS.Store.setCurrentTenantId('SUPERADMIN');
       return { success: true, user: su };
     }
 
     if (user) {
+      // Jika login berhasil menggunakan password plain text, lakukan migrasi otomatis ke hash
+      if (isPlaintextMatch) {
+        try {
+          TMS.Store.updateUser(user.id, { password: hashedEnteredPassword });
+          user.password = hashedEnteredPassword;
+          console.log(`User ${username} berhasil dimigrasikan ke password hash SHA-256.`);
+        } catch(err) {
+          console.warn("Gagal menyimpan migrasi password secara asinkron:", err);
+        }
+      }
+
       // Hilangkan password dari session demi keamanan
       const sessionUser = { ...user };
       delete sessionUser.password;
@@ -42,6 +121,8 @@ TMS.Auth = (() => {
   function logout() {
     if (confirm('Apakah Anda yakin ingin keluar dari sistem?')) {
       TMS.Store.setCurrentUser(null);
+      TMS.Store.setCurrentTenantId(null);
+      TMS.Store.clearSessionData(); // Bersihkan seluruh memori & local file pada saat keluar
       // Bersihkan hash untuk kembali ke dashboard saat login nanti
       window.location.hash = '';
       TMS.App.handleRoute();
@@ -68,7 +149,8 @@ TMS.Auth = (() => {
     const mapping = {
       // Jika sistem mengecek page key (flights, verify, dll)
       'flights': 'flight',
-      'refunds': 'flight',
+      'refunds': 'refund',
+      'umroh': 'umroh',
       'hotels': 'hotel',
       'rentals': 'rental',
       'tours': 'tour',
@@ -85,7 +167,8 @@ TMS.Auth = (() => {
       
       // Jika sistem mengecek module name (flight, payment, dll)
       'flight': 'flights',
-      'refund': 'flights',
+      'refund': 'refunds',
+      'umroh': 'umroh',
       'hotel': 'hotels',
       'rental': 'rentals',
       'tour': 'tours',
@@ -114,8 +197,7 @@ TMS.Auth = (() => {
       <div class="login-screen" style="position:fixed;top:0;left:0;width:100%;height:100%;background:var(--bg-sidebar);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background-image: radial-gradient(circle at 20% 30%, rgba(184, 158, 103, 0.05) 0%, transparent 40%), radial-gradient(circle at 80% 70%, rgba(184, 158, 103, 0.05) 0%, transparent 40%);">
         <div class="card" style="width:100%;max-width:380px;padding:40px;box-shadow:0 20px 50px rgba(0,0,0,0.3);border-radius:24px;background:var(--bg-card);border:2px solid var(--primary);">
           <div style="text-align:center;margin-bottom:32px;">
-            <img src="${logoSrc}?v=4" style="width:180px;height:auto;object-fit:contain;margin:0 auto 16px;display:block;border-radius:0;background:transparent;" alt="Logo">
-            <h1 style="display:none;font-size:24px;font-weight:800;margin-bottom:8px;color:var(--text-main);">${compName}</h1>
+            <img src="${logoSrc}?v=5" width="180" height="180" style="width:180px;height:180px;object-fit:contain;margin:0 auto 16px;display:block;border-radius:0;background:transparent;" alt="Logo">
             <p class="text-muted" style="font-size:14px;">Silakan login untuk mengakses sistem</p>
           </div>
           
@@ -159,7 +241,7 @@ TMS.Auth = (() => {
     btn.innerHTML = '<div class="spinner-sm"></div> Memproses...';
     
     // Langsung proses tanpa delay untuk respon cepat
-    const result = login(userEl.value, passEl.value);
+    const result = await login(userEl.value, passEl.value);
     
     if (result.success) {
       TMS.App.toast('Selamat datang kembali, ' + result.user.name);
@@ -179,5 +261,5 @@ TMS.Auth = (() => {
     }
   }
 
-  return { login, logout, checkAccess, renderLogin, handleLoginSubmit };
+  return { login, logout, checkAccess, renderLogin, handleLoginSubmit, hashPassword };
 })();

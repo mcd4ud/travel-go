@@ -10,6 +10,7 @@ TMS.Excel = (() => {
     hotels: ['id', 'bookingCode', 'guestName', 'hotelName', 'hotelAddress', 'roomType', 'checkIn', 'checkOut', 'nights', 'status', 'totalPrice'],
     rentals: ['id', 'bookingCode', 'renterName', 'vehicleName', 'pickupDate', 'returnDate', 'withDriver', 'status', 'totalPrice'],
     tours: ['id', 'bookingCode', 'leadTraveler', 'tourName', 'destination', 'departureDate', 'days', 'pax', 'status', 'totalPrice'],
+    umroh: ['id', 'bookingCode', 'customerName', 'packageName', 'departureDate', 'days', 'pax', 'mutawwif', 'status', 'sellingPrice'],
     expenses: ['id', 'date', 'code', 'name', 'amount', 'notes'] // For accounting module
   };
 
@@ -41,7 +42,7 @@ TMS.Excel = (() => {
     
     // Download
     XLSX.writeFile(workbook, `${collectionName}_export.xlsx`);
-    TMS.App.showToast(`Berhasil mengekspor data ${collectionName}`);
+    TMS.App.toast(`Berhasil mengekspor data ${collectionName}`);
   }
 
   function triggerImport(collectionName) {
@@ -74,7 +75,7 @@ TMS.Excel = (() => {
         const json = XLSX.utils.sheet_to_json(worksheet);
 
         if (!json || json.length === 0) {
-          TMS.App.showToast('File kosong atau format salah.', 'error');
+          TMS.App.toast('File kosong atau format salah.', 'error');
           return;
         }
 
@@ -96,20 +97,26 @@ TMS.Excel = (() => {
           if (row.totalPrice) row.totalPrice = Number(row.totalPrice) || 0;
           if (row.amount) row.amount = Number(row.amount) || 0;
           
-          TMS.Store.save(collectionName, row);
+          const existing = TMS.Store.getById(collectionName, row.id);
+          if (existing) {
+            TMS.Store.update(collectionName, row.id, row);
+          } else {
+            TMS.Store.add(collectionName, row);
+          }
         });
 
-        TMS.App.showToast(`Impor selesai: ${importCount} baru, ${updateCount} diupdate.`);
+        TMS.App.toast(`Impor selesai: ${importCount} baru, ${updateCount} diupdate.`);
         
         // Refresh views
         if (collectionName === 'flights' && TMS.Flight) TMS.Flight.renderList();
         if (collectionName === 'hotels' && TMS.Hotel) TMS.Hotel.renderList();
         if (collectionName === 'rentals' && TMS.Rental) TMS.Rental.renderList();
         if (collectionName === 'tours' && TMS.Tour) TMS.Tour.renderList();
+        if (collectionName === 'umroh' && TMS.Umroh) TMS.Umroh.renderList();
         if (collectionName === 'expenses' && TMS.Accounting) TMS.Accounting.init();
       } catch (err) {
         console.error(err);
-        TMS.App.showToast('Gagal memproses file Excel.', 'error');
+        TMS.App.toast('Gagal memproses file Excel.', 'error');
       }
     };
     reader.readAsArrayBuffer(file);
@@ -125,7 +132,7 @@ TMS.Excel = (() => {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
     XLSX.writeFile(workbook, `${title.replace(/\s+/g, '_')}.xlsx`);
-    TMS.App.showToast(`Berhasil mengekspor ${title}`);
+    TMS.App.toast(`Berhasil mengekspor ${title}`);
   }
 
   return { exportData, triggerImport, exportReport };

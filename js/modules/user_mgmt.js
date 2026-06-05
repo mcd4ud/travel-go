@@ -11,7 +11,9 @@ TMS.UserMgmt = (() => {
     { id: 'hotel', name: 'Voucher Hotel', section: 'Reservasi & Dokumen' },
     { id: 'rental', name: 'Voucher Rental', section: 'Reservasi & Dokumen' },
     { id: 'tour', name: 'Paket Wisata', section: 'Reservasi & Dokumen' },
+    { id: 'umroh', name: 'Paket Umroh & Haji', section: 'Reservasi & Dokumen' },
     { id: 'invoice', name: 'Invoice', section: 'Reservasi & Dokumen' },
+    { id: 'refund', name: 'Refund & Void', section: 'Reservasi & Dokumen' },
     { id: 'verify', name: 'Verifikasi Bayar', section: 'Reservasi & Dokumen' },
     { id: 'customer', name: 'Manajemen Pelanggan', section: 'Reservasi & Dokumen' },
     { id: 'vendor', name: 'Manajemen Vendor', section: 'Reservasi & Dokumen' },
@@ -50,7 +52,13 @@ TMS.UserMgmt = (() => {
   }
 
   function render() {
-    const users = TMS.Store.getUsers();
+    let users = TMS.Store.getUsers();
+    const tenantId = TMS.Store.getTenantId();
+    
+    // UI Filter: Jika bukan SUPERADMIN, saring agar HANYA menampilkan user yang se-perusahaan
+    if (tenantId && tenantId !== 'SUPERADMIN') {
+      users = users.filter(u => u.tenantId === tenantId);
+    }
     
     return `
       <div class="animate-fade-in">
@@ -209,7 +217,14 @@ TMS.UserMgmt = (() => {
     document.getElementById('userId').value = user.id;
     document.getElementById('userName').value = user.name;
     document.getElementById('userUsername').value = user.username;
-    document.getElementById('userPassword').value = user.password;
+    
+    // Untuk edit, kosongkan password field dan set placeholder info
+    const passEl = document.getElementById('userPassword');
+    if (passEl) {
+      passEl.value = '';
+      passEl.placeholder = 'Biarkan kosong jika tidak diubah';
+    }
+    
     document.getElementById('userRole').value = user.role;
     if (TMS.Store.getTenantId() === 'SUPERADMIN') {
       const tenantEl = document.getElementById('userTenant');
@@ -223,6 +238,7 @@ TMS.UserMgmt = (() => {
       
       // Backward compatibility check for old permission keys
       if (!hasPerm) {
+        if (c.value === 'refund' && user.permissions.includes('flight')) hasPerm = true;
         if (c.value === 'verify' && user.permissions.includes('payment')) hasPerm = true;
         if (c.value === 'fraud' && user.permissions.includes('payment')) hasPerm = true;
         if (c.value === 'journals' && user.permissions.includes('accounting')) hasPerm = true;
@@ -247,16 +263,26 @@ TMS.UserMgmt = (() => {
     permsSection.style.pointerEvents = role === 'admin' ? 'none' : 'auto';
   }
 
-  function saveUser() {
+  async function saveUser() {
     const id = document.getElementById('userId').value;
     const name = document.getElementById('userName').value;
     const username = document.getElementById('userUsername').value;
     const password = document.getElementById('userPassword').value;
     const role = document.getElementById('userRole').value;
     
-    if (!name || !username || !password) {
-      TMS.App.toast('Mohon lengkapi data user!', 'warning');
-      return;
+    // Validasi
+    if (id) {
+      // Jika edit, minimal nama & username terisi
+      if (!name || !username) {
+        TMS.App.toast('Mohon lengkapi data user!', 'warning');
+        return;
+      }
+    } else {
+      // Jika baru, password wajib diisi
+      if (!name || !username || !password) {
+        TMS.App.toast('Mohon lengkapi data user termasuk password!', 'warning');
+        return;
+      }
     }
 
     let permissions = [];
@@ -277,7 +303,16 @@ TMS.UserMgmt = (() => {
       }
     }
 
-    const userData = { name, username, password, role, permissions, tenantId };
+    // Hitung hash password baru jika diinput, atau pertahankan yang lama
+    let hashedPass = '';
+    if (password) {
+      hashedPass = await TMS.Auth.hashPassword(password);
+    } else if (id) {
+      const oldUser = TMS.Store.getUsers().find(u => u.id === id);
+      hashedPass = oldUser ? oldUser.password : '';
+    }
+
+    const userData = { name, username, password: hashedPass, role, permissions, tenantId };
 
     if (id) {
       TMS.Store.updateUser(id, userData);

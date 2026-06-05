@@ -99,7 +99,7 @@ TMS.Hotel = (() => {
       </div>
     </div>
     <div class="modal-overlay" id="hotelModal">
-      <div class="modal modal-lg"><div class="modal-header"><span class="modal-title" id="hotelModalTitle">Buat Voucher Hotel</span><button class="modal-close" onclick="TMS.Hotel.closeForm()">✕</button></div>
+      <div class="modal modal-full"><div class="modal-header"><span class="modal-title" id="hotelModalTitle">Buat Voucher Hotel</span><button class="modal-close" onclick="TMS.Hotel.closeForm()">✕</button></div>
       <div class="modal-body" id="hotelModalBody">${renderForm()}</div></div>
     </div>`;
   }
@@ -121,6 +121,7 @@ TMS.Hotel = (() => {
         <td>${h.paymentStatus === 'paid' ? '<span class="badge badge-success badge-dot">Lunas</span>' : '<span class="badge badge-danger badge-dot">Belum Lunas</span>'}</td>
         <td><div class="btn-group">
           <button class="btn btn-sm btn-outline" onclick="TMS.Hotel.showDetail('${h.id}')" title="Detail"><i data-lucide="eye"></i></button>
+          <button class="btn btn-sm btn-outline" style="color:var(--primary-light);border-color:var(--primary-light);" onclick="TMS.Hotel.showForm('${h.id}')" title="Edit"><i data-lucide="edit-3"></i></button>
           <button class="btn btn-sm btn-outline" style="color:var(--warning);border-color:var(--warning);" onclick="TMS.Refund.launchRefund('${h.id}', 'hotel')" title="Ajukan Refund / Void"><i data-lucide="rotate-ccw"></i></button>
           <button class="btn btn-sm btn-whatsapp" onclick="TMS.App.shareToWhatsApp('hotel', '${h.id}')" title="Kirim WhatsApp"><i data-lucide="message-square"></i></button>
           <button class="btn btn-sm btn-primary" onclick="TMS.Hotel.download('${h.id}')" title="Unduh Voucher"><i data-lucide="download"></i></button>
@@ -134,6 +135,7 @@ TMS.Hotel = (() => {
     const generatedCode = S.generateCode('hotel');
     return `
     <form id="hotelForm" onsubmit="TMS.Hotel.save(event)">
+      <input type="hidden" name="id" value="${data.id || ''}">
       <div class="form-section-title"><i data-lucide="hash"></i> Administrasi</div>
       <div class="form-row">
         <div class="form-group">
@@ -145,7 +147,7 @@ TMS.Hotel = (() => {
           <input class="form-control font-mono" name="itineraryId" value="${data.itineraryId || generatedCode}" readonly style="background:var(--bg-secondary);">
         </div>
       </div>
-      <input type="hidden" name="bookingCode" value="${data.itineraryId || generatedCode}">
+      <input type="hidden" name="bookingCode" value="${data.bookingCode || data.itineraryId || generatedCode}">
 
       <div class="form-section-title"><i data-lucide="user"></i> Data Pemesan (Customer)</div>
       <div class="form-group mb-1">
@@ -156,16 +158,16 @@ TMS.Hotel = (() => {
         </select>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Nama Pemesan *</label><input class="form-control" name="customerName" id="customerName" required placeholder="Nama lengkap sesuai identitas"></div>
-        <div class="form-group"><label class="form-label">No. Identitas (KTP/Paspor)</label><input class="form-control" name="customerId" id="customerId" placeholder="Nomor KTP / Paspor"></div>
+        <div class="form-group"><label class="form-label">Nama Pemesan *</label><input class="form-control" name="customerName" id="customerName" value="${data.customerName || ''}" required placeholder="Nama lengkap sesuai identitas"></div>
+        <div class="form-group"><label class="form-label">No. Identitas (KTP/Paspor)</label><input class="form-control" name="customerId" id="customerId" value="${data.customerId || ''}" placeholder="Nomor KTP / Paspor"></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Email Pemesan *</label><input class="form-control" type="email" name="customerEmail" id="customerEmail" required placeholder="email@domain.com"></div>
-        <div class="form-group"><label class="form-label">Telepon Pemesan *</label><input class="form-control" name="customerPhone" id="customerPhone" required placeholder="08xx-xxxx-xxxx"></div>
+        <div class="form-group"><label class="form-label">Email Pemesan *</label><input class="form-control" type="email" name="customerEmail" id="customerEmail" value="${data.customerEmail || ''}" required placeholder="email@domain.com"></div>
+        <div class="form-group"><label class="form-label">Telepon Pemesan *</label><input class="form-control" name="customerPhone" id="customerPhone" value="${data.customerPhone || ''}" required placeholder="08xx-xxxx-xxxx"></div>
       </div>
       <div class="form-group mb-2">
         <label class="form-label">Alamat Lengkap</label>
-        <textarea class="form-control" name="customerAddress" id="customerAddress" rows="2" placeholder="Alamat pengiriman / domisili"></textarea>
+        <textarea class="form-control" name="customerAddress" id="customerAddress" rows="2" placeholder="Alamat pengiriman / domisili">${data.customerAddress || ''}</textarea>
       </div>
       
       <div class="form-group mb-2" style="background:var(--bg-secondary); padding:0.75rem; border-radius:4px; border:1px solid var(--border-color);">
@@ -184,18 +186,18 @@ TMS.Hotel = (() => {
         </select>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Nama Tamu *</label><input class="form-control" name="guestName" id="h_name" required placeholder="Nama lengkap"></div>
+        <div class="form-group"><label class="form-label">Nama Tamu *</label><input class="form-control" name="guestName" id="h_name" value="${data.guestName || ''}" required placeholder="Nama lengkap"></div>
         <div class="form-group"><label class="form-label">Kategori *</label>
           <select class="form-control" name="guestCategory" required>
-            <option value="Adult">Dewasa (Adult)</option>
-            <option value="Child">Anak (Child)</option>
-            <option value="Infant">Bayi (Infant)</option>
+            <option value="Adult" ${data.guestCategory === 'Adult' ? 'selected' : ''}>Dewasa (Adult)</option>
+            <option value="Child" ${data.guestCategory === 'Child' ? 'selected' : ''}>Anak (Child)</option>
+            <option value="Infant" ${data.guestCategory === 'Infant' ? 'selected' : ''}>Bayi (Infant)</option>
           </select>
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Email</label><input class="form-control" type="email" name="guestEmail" id="h_email" placeholder="email@domain.com"></div>
-        <div class="form-group"><label class="form-label">Telepon</label><input class="form-control" name="guestPhone" id="h_phone" placeholder="08xx-xxxx-xxxx"></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-control" type="email" name="guestEmail" id="h_email" value="${data.guestEmail || ''}" placeholder="email@domain.com"></div>
+        <div class="form-group"><label class="form-label">Telepon</label><input class="form-control" name="guestPhone" id="h_phone" value="${data.guestPhone || ''}" placeholder="08xx-xxxx-xxxx"></div>
       </div>
       <div class="form-section-title"><i data-lucide="hotel"></i> Detail Hotel</div>
       <div class="form-group">
@@ -205,51 +207,57 @@ TMS.Hotel = (() => {
           ${S.getAll('db_hotels').map(h => `<option value="${h.id}">${h.name} — ${h.city} (${h.stars}★)</option>`).join('')}
         </select>
       </div>
-      <div class="form-group"><label class="form-label">Nama Hotel *</label><input class="form-control" name="hotelName" required placeholder="The Ritz-Carlton Bali"></div>
-      <div class="form-group"><label class="form-label">Alamat Hotel</label><input class="form-control" name="hotelAddress" placeholder="Jl. Raya Nusa Dua Selatan Lot III, Nusa Dua, Bali"></div>
+      <div class="form-group"><label class="form-label">Nama Hotel *</label><input class="form-control" name="hotelName" value="${data.hotelName || ''}" required placeholder="The Ritz-Carlton Bali"></div>
+      <div class="form-group"><label class="form-label">Alamat Hotel</label><input class="form-control" name="hotelAddress" value="${data.hotelAddress || ''}" placeholder="Jl. Raya Nusa Dua Selatan Lot III, Nusa Dua, Bali"></div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Tipe Kamar *</label>
           <select class="form-control" name="roomType" required>
             <option value="">Pilih tipe kamar</option>
-            <option>Deluxe Room</option><option>Superior Room</option><option>Suite Room</option><option>Standard Room</option><option>Junior Suite</option><option>Presidential Suite</option><option>Family Room</option>
+            <option ${data.roomType === 'Deluxe Room' ? 'selected' : ''}>Deluxe Room</option>
+            <option ${data.roomType === 'Superior Room' ? 'selected' : ''}>Superior Room</option>
+            <option ${data.roomType === 'Suite Room' ? 'selected' : ''}>Suite Room</option>
+            <option ${data.roomType === 'Standard Room' ? 'selected' : ''}>Standard Room</option>
+            <option ${data.roomType === 'Junior Suite' ? 'selected' : ''}>Junior Suite</option>
+            <option ${data.roomType === 'Presidential Suite' ? 'selected' : ''}>Presidential Suite</option>
+            <option ${data.roomType === 'Family Room' ? 'selected' : ''}>Family Room</option>
           </select>
         </div>
-        <div class="form-group"><label class="form-label">Nomor Konfirmasi (Voucher)</label><input class="form-control" name="confirmationNumber" placeholder="Contoh: 123456789"></div>
+        <div class="form-group"><label class="form-label">Nomor Konfirmasi (Voucher)</label><input class="form-control" name="confirmationNumber" value="${data.confirmationNumber || ''}" placeholder="Contoh: 123456789"></div>
       </div>
       <div class="form-row-3">
-        <div class="form-group"><label class="form-label">Nomor Kamar</label><input class="form-control" name="roomNumber" placeholder="201"></div>
-        <div class="form-group"><label class="form-label">Check-in *</label><input class="form-control" type="date" name="checkIn" required onchange="TMS.Hotel.calcNights()"></div>
-        <div class="form-group"><label class="form-label">Check-out *</label><input class="form-control" type="date" name="checkOut" required onchange="TMS.Hotel.calcNights()"></div>
+        <div class="form-group"><label class="form-label">Nomor Kamar</label><input class="form-control" name="roomNumber" value="${data.roomNumber || ''}" placeholder="201"></div>
+        <div class="form-group"><label class="form-label">Check-in *</label><input class="form-control" type="date" name="checkIn" value="${data.checkIn || ''}" required onchange="TMS.Hotel.calcNights()"></div>
+        <div class="form-group"><label class="form-label">Check-out *</label><input class="form-control" type="date" name="checkOut" value="${data.checkOut || ''}" required onchange="TMS.Hotel.calcNights()"></div>
       </div>
       <div class="form-row">
         <div class="form-group"><label class="form-label">Sarapan?</label>
           <select class="form-control" name="breakfast">
-            <option value="Termasuk">Termasuk Sarapan</option>
-            <option value="Tidak Termasuk">Tanpa Sarapan</option>
+            <option value="Termasuk" ${data.breakfast === 'Termasuk' ? 'selected' : ''}>Termasuk Sarapan</option>
+            <option value="Tidak Termasuk" ${data.breakfast === 'Tidak Termasuk' ? 'selected' : ''}>Tanpa Sarapan</option>
           </select>
         </div>
-        <div class="form-group"><label class="form-label">Jumlah Malam</label><div class="form-control" id="nightsDisplay" style="color:var(--primary-light);font-weight:700;">0 malam</div><input type="hidden" name="nights" id="nightsInput" value="0"></div>
+        <div class="form-group"><label class="form-label">Jumlah Malam</label><div class="form-control" id="nightsDisplay" style="color:var(--primary-light);font-weight:700;">0 malam</div><input type="hidden" name="nights" id="nightsInput" value="${data.nights || 0}"></div>
       </div>
-      <div class="form-group"><label class="form-label">Catatan Khusus</label><input class="form-control" name="specialRequest" placeholder="Permintaan khusus..."></div>
+      <div class="form-group"><label class="form-label">Catatan Khusus</label><input class="form-control" name="specialRequest" value="${data.specialRequest || ''}" placeholder="Permintaan khusus..."></div>
       <div class="form-section-title"><i data-lucide="dollar-sign"></i> Harga & Pembayaran Vendor</div>
       <div class="card p-1 mb-2" style="background:rgba(7,112,227,0.03); border:1px solid var(--primary-light);">
         <div class="form-group">
           <label class="form-label" style="color:var(--primary-light); font-weight:700;">Bayar Vendor Menggunakan Akun: *</label>
           <select class="form-control" name="paymentAccount" required style="border-color:var(--primary-light);">
             <option value="2-2000" ${data.paymentAccount === '2-2000' || !data.paymentAccount ? 'selected' : ''}>2-2000 - Utang Usaha (Belum Bayar)</option>
-            ${S.getCOA().filter(a => a.type === 'asset' && (a.code.startsWith('1-10') || a.code.startsWith('1-13'))).map(a => `<option value="${a.code}" ${data.paymentAccount === a.code ? 'selected' : ''}>${a.code} - ${a.name} (Saldo: ${S.formatCurrency(a.balance)})</option>`).join('')}
+            ${S.getCOA().filter(a => a.type === 'asset' && (a.code.startsWith('1-10') || a.code.startsWith('1-13'))).sort((a, b) => a.code.localeCompare(b.code)).map(a => `<option value="${a.code}" ${data.paymentAccount === a.code ? 'selected' : ''}>${a.code} - ${a.name} (Saldo: ${S.formatCurrency(a.balance)})</option>`).join('')}
           </select>
           <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Pilih akun kas/bank/deposit yang digunakan untuk membayar modal hotel ke vendor.</div>
         </div>
       </div>
       <div class="form-row-3">
-        <div class="form-group"><label class="form-label">Harga Modal / Beli (per malam) *</label><div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="number" name="costPricePerNight" value="${data.costPricePerNight || ''}" required min="0" placeholder="0" oninput="TMS.Hotel.calcTotal()"></div></div>
-        <div class="form-group"><label class="form-label">Margin (per malam) *</label><div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="number" id="h_marginPerNight" name="marginPerNight" value="${(data.sellingPricePerNight !== undefined && data.costPricePerNight !== undefined) ? (data.sellingPricePerNight - data.costPricePerNight) : ''}" required min="0" placeholder="0" oninput="TMS.Hotel.calcTotal()"></div></div>
-        <div class="form-group"><label class="form-label">Harga Jual (per malam)</label><div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="number" id="h_sellingPricePerNight" name="sellingPricePerNight" value="${data.sellingPricePerNight || ''}" readonly style="background:var(--bg-secondary);" min="0" placeholder="0"></div></div>
+        <div class="form-group"><label class="form-label">Harga Modal / Beli (per malam) *</label><div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="text" name="costPricePerNight" value="${S.formatInt(data.costPricePerNight || '')}" required placeholder="0" oninput="TMS.App.formatNumberInput(this); TMS.Hotel.calcTotal()"></div></div>
+        <div class="form-group"><label class="form-label">Margin (per malam) *</label><div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="text" id="h_marginPerNight" name="marginPerNight" value="${S.formatInt((data.sellingPricePerNight !== undefined && data.costPricePerNight !== undefined) ? (data.sellingPricePerNight - data.costPricePerNight) : '')}" required placeholder="0" oninput="TMS.App.formatNumberInput(this); TMS.Hotel.calcTotal()"></div></div>
+        <div class="form-group"><label class="form-label">Harga Jual (per malam)</label><div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="text" id="h_sellingPricePerNight" name="sellingPricePerNight" value="${S.formatInt(data.sellingPricePerNight || '')}" readonly style="background:var(--bg-secondary);" placeholder="0"></div></div>
       </div>
       <div class="form-row">
-        <div class="form-group"><label class="form-label">Total Harga Modal</label><div class="form-control" id="totalCostDisplay" style="color:var(--text-secondary);font-weight:700;">Rp 0</div><input type="hidden" name="costPrice" id="costPriceHidden"></div>
-        <div class="form-group"><label class="form-label">Total Harga Jual</label><div class="form-control" id="totalSellDisplay" style="color:var(--primary-light);font-weight:700;">Rp 0</div><input type="hidden" name="sellingPrice" id="sellingPriceHidden"></div>
+        <div class="form-group"><label class="form-label">Total Harga Modal</label><div class="form-control" id="totalCostDisplay" style="color:var(--text-secondary);font-weight:700;">Rp 0</div><input type="hidden" name="costPrice" id="costPriceHidden" value="${data.costPrice || 0}"></div>
+        <div class="form-group"><label class="form-label">Total Harga Jual</label><div class="form-control" id="totalSellDisplay" style="color:var(--primary-light);font-weight:700;">Rp 0</div><input type="hidden" name="sellingPrice" id="sellingPriceHidden" value="${data.sellingPrice || 0}"></div>
         <div class="form-group"><label class="form-label">Estimasi Margin (Laba)</label><div class="form-control" id="hotelMarginDisplay" style="background:var(--success-bg); color:var(--success); font-weight:800;">Rp 0</div></div>
       </div>
       <div class="form-actions">
@@ -273,12 +281,12 @@ TMS.Hotel = (() => {
 
   function calcTotal() {
     const nights = parseInt(document.getElementById('nightsInput')?.value) || 0;
-    const costPN = parseFloat(document.querySelector('[name="costPricePerNight"]')?.value) || 0;
-    const marginPN = parseFloat(document.querySelector('[name="marginPerNight"]')?.value) || 0;
+    const costPN = S.parseNumber(document.querySelector('[name="costPricePerNight"]')?.value) || 0;
+    const marginPN = S.parseNumber(document.querySelector('[name="marginPerNight"]')?.value) || 0;
     const sellPN = costPN + marginPN;
 
     const sellPNInp = document.getElementById('h_sellingPricePerNight');
-    if (sellPNInp) sellPNInp.value = sellPN;
+    if (sellPNInp) sellPNInp.value = S.formatInt(sellPN);
 
     const totalCost = costPN * nights; 
     const totalSell = sellPN * nights;
@@ -296,11 +304,20 @@ TMS.Hotel = (() => {
     document.getElementById('sellingPriceHidden').value = totalSell;
   }
 
-  function showForm() { 
+  function showForm(id = null) { 
     const modal = document.getElementById('hotelModal');
-    modal.querySelector('.modal-title').textContent = 'Buat Voucher Hotel';
-    modal.querySelector('.modal-body').innerHTML = renderForm();
-    modal.classList.add('active'); 
+    if (id) {
+      const h = S.getById('hotels', id);
+      if (!h) return;
+      modal.querySelector('.modal-title').textContent = 'Edit Voucher Hotel';
+      modal.querySelector('.modal-body').innerHTML = renderForm(h);
+      modal.classList.add('active'); 
+      calcNights();
+    } else {
+      modal.querySelector('.modal-title').textContent = 'Buat Voucher Hotel';
+      modal.querySelector('.modal-body').innerHTML = renderForm();
+      modal.classList.add('active'); 
+    }
     if (window.lucide) lucide.createIcons(); 
   }
   function closeForm() { document.getElementById('hotelModal').classList.remove('active'); }
@@ -430,21 +447,71 @@ TMS.Hotel = (() => {
     const fd = new FormData(e.target);
     const data = Object.fromEntries(fd.entries());
     const booking = { ...data };
-    booking.costPrice = parseFloat(booking.costPrice) || 0;
-    booking.sellingPrice = parseFloat(booking.sellingPrice) || 0;
+    booking.costPrice = S.parseNumber(booking.costPrice) || 0;
+    booking.sellingPrice = S.parseNumber(booking.sellingPrice) || 0;
     booking.nights = parseInt(booking.nights) || 0;
+    booking.costPricePerNight = S.parseNumber(booking.costPricePerNight) || 0;
+    booking.sellingPricePerNight = S.parseNumber(booking.sellingPricePerNight) || 0;
+    booking.marginPerNight = S.parseNumber(booking.marginPerNight) || 0;
     
-    if (data.id) {
+    const isEdit = !!data.id;
+    let existing = null;
+    let isPaid = false;
+    if (isEdit) {
+      existing = S.getById('hotels', data.id);
+      if (existing) {
+        isPaid = existing.paymentStatus === 'paid';
+        // Clean up financial data associated with old bookingCode/bookingId
+        const invoices = S.getAll('invoices').filter(inv => inv.bookingId === data.id);
+        invoices.forEach(inv => {
+          const payments = S.getAll('payments');
+          payments.forEach(p => { if (p.invoiceId === inv.id) S.remove('payments', p.id); });
+          S.remove('invoices', inv.id);
+        });
+        const journals = S.getAll('journals');
+        journals.forEach(j => {
+          if (j.reference === existing.bookingCode) S.remove('journals', j.id);
+        });
+      }
+    }
+
+    let savedObj = null;
+    if (isEdit && existing) {
+      booking.bookingCode = existing.bookingCode;
+      booking.paymentStatus = existing.paymentStatus || 'unpaid';
       S.update('hotels', data.id, booking);
+      savedObj = S.getById('hotels', data.id);
       TMS.App.toast('Voucher Hotel berhasil diperbarui!', 'success');
     } else {
       booking.bookingCode = S.generateCode('hotel'); 
       booking.paymentStatus = 'unpaid';
-      const saved = S.add('hotels', booking);
-      createJournal(saved); createInvoice(saved);
+      savedObj = S.add('hotels', booking);
       TMS.App.toast('Voucher Hotel berhasil diterbitkan!', 'success');
     }
-    closeForm(); TMS.App.navigate('hotels');
+
+    createJournal(savedObj);
+    const inv = createInvoice(savedObj);
+
+    if (isEdit && isPaid) {
+      S.update('hotels', savedObj.id, { paymentStatus: 'paid' });
+      S.update('invoices', inv.id, { paymentStatus: 'paid', paidAt: existing.paidAt || new Date().toISOString() });
+      const j = {
+        journalNumber: S.generateCode('journal'),
+        date: new Date().toISOString().split('T')[0],
+        description: `Penerimaan Kas - ${savedObj.bookingCode}`,
+        reference: savedObj.bookingCode,
+        type: 'payment_received',
+        entries: [
+          { accountCode: '1-1000', accountName: 'Kas', debit: inv.total, credit: 0 },
+          { accountCode: '1-1100', accountName: 'Piutang Usaha', debit: 0, credit: inv.total }
+        ]
+      };
+      S.add('journals', j);
+      S.recalculateCOA();
+    }
+
+    closeForm();
+    TMS.App.navigate('hotels');
   }
 
   function markPaid(id) {

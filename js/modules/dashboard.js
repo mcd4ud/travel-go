@@ -20,10 +20,14 @@ TMS.Dashboard = (() => {
     const hotels = getAll('hotels');
     const rentals = getAll('rentals');
     const tours = getAll('tours');
-    const recentAll = [...flights.map(f => ({ ...f, _type: 'flight' })),
+    const umrohs = getAll('umroh') || [];
+    const recentAll = [
+      ...flights.map(f => ({ ...f, _type: 'flight' })),
       ...hotels.map(h => ({ ...h, _type: 'hotel' })),
       ...rentals.map(r => ({ ...r, _type: 'rental' })),
-      ...tours.map(t => ({ ...t, _type: 'tour' }))]
+      ...tours.map(t => ({ ...t, _type: 'tour' })),
+      ...umrohs.map(u => ({ ...u, passengerName: u.customerName, _type: 'umroh' }))
+    ]
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
 
     const fraudAlerts = TMS.Store.getFraudAlert();
@@ -38,6 +42,48 @@ TMS.Dashboard = (() => {
       </div>
       <button class="btn btn-danger" onclick="TMS.App.navigate('fraud')" style="margin-left:auto;">Periksa Log</button>
     </div>` : '';
+
+    const inventoryAlerts = TMS.Store.getInventoryAlerts ? TMS.Store.getInventoryAlerts() : [];
+    const inventoryBanner = inventoryAlerts.length > 0 ? `
+    <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:16px;padding:16px;margin-bottom:28px;display:flex;align-items:center;gap:16px;">
+      <div style="width:48px;height:48px;background:#f59e0b;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 8px 16px rgba(245,158,11,0.3);">
+        <i data-lucide="alert-triangle"></i>
+      </div>
+      <div style="text-align:left;">
+        <div style="font-weight:800;color:#d97706;font-size:16px;">Peringatan Persediaan Logistik Menipis</div>
+        <div style="color:var(--text-secondary);font-size:13px;">Barang berikut di bawah batas minimum: ${inventoryAlerts.map(i => `<strong>${i.name}</strong> (${i.stock} tersisa)`).join(', ')}.</div>
+      </div>
+      <button class="btn" style="background:#f59e0b; color:#fff; border:none; margin-left:auto;" onclick="TMS.App.navigate('umroh'); setTimeout(() => TMS.Umroh.openInventoryModal(), 150);">Kelola Logistik</button>
+    </div>` : '';
+
+    const inventory = TMS.Store.getAll ? TMS.Store.getAll('inventory') : [];
+    const inventoryListHtml = inventory.map(item => {
+      const stock = item.stock || 0;
+      const threshold = item.minThreshold || 15;
+      const pct = Math.min(100, Math.max(0, (stock / 100) * 100));
+      const isLow = stock <= threshold;
+      
+      let barColor = 'var(--primary)';
+      if (stock <= 5) barColor = 'var(--danger)';
+      else if (isLow) barColor = '#f59e0b';
+      else barColor = '#10b981';
+      
+      return `
+      <div style="margin-bottom: 14px; text-align:left;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:12px;">
+          <span style="font-weight:600; color:var(--text-primary);">${item.name}</span>
+          <span style="font-weight:700; color:${isLow ? '#d97706' : 'var(--text-secondary)'};">${stock} unit ${isLow ? '⚠️' : ''}</span>
+        </div>
+        <div style="width:100%; height:8px; background:var(--bg-secondary); border-radius:4px; overflow:hidden;">
+          <div style="width:${pct}%; height:100%; background:${barColor}; border-radius:4px; transition: width 0.3s ease;"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-top:3px; font-size:10px; color:var(--text-muted);">
+          <span>Min: ${threshold} unit</span>
+          <span>Kode: ${item.code}</span>
+        </div>
+      </div>
+      `;
+    }).join('');
 
     return `
     <div class="fade-in">
@@ -54,32 +100,39 @@ TMS.Dashboard = (() => {
       </div>
 
       ${fraudBanner}
+      ${inventoryBanner}
 
       <!-- Row 1: Key Statistics -->
       <div class="stat-grid" style="margin-bottom:32px;">
-        <div class="stat-card blue">
+        <div class="stat-card blue" onclick="TMS.App.navigate('flights')">
           <div class="stat-icon blue"><i data-lucide="plane"></i></div>
           <div class="stat-value">${stats.totalFlights}</div>
           <div class="stat-label">Tiket Pesawat</div>
-          <div class="stat-change up"><i data-lucide="trending-up"></i> Pertumbuhan Positif</div>
+          <div class="stat-change up"><i data-lucide="trending-up"></i> Booking</div>
         </div>
-        <div class="stat-card green">
+        <div class="stat-card green" onclick="TMS.App.navigate('hotels')">
           <div class="stat-icon green"><i data-lucide="hotel"></i></div>
           <div class="stat-value">${stats.totalHotels}</div>
           <div class="stat-label">Voucher Hotel</div>
           <div class="stat-change up"><i data-lucide="check-circle"></i> Status Aktif</div>
         </div>
-        <div class="stat-card orange">
+        <div class="stat-card orange" onclick="TMS.App.navigate('rentals')">
           <div class="stat-icon orange"><i data-lucide="car"></i></div>
           <div class="stat-value">${stats.totalRentals}</div>
           <div class="stat-label">Rental Mobil</div>
           <div class="stat-change up"><i data-lucide="clock"></i> On Schedule</div>
         </div>
-        <div class="stat-card purple">
+        <div class="stat-card purple" onclick="TMS.App.navigate('tours')">
           <div class="stat-icon purple"><i data-lucide="map"></i></div>
           <div class="stat-value">${stats.totalTours || 0}</div>
           <div class="stat-label">Paket Wisata</div>
           <div class="stat-change up"><i data-lucide="users"></i> Grup Terdaftar</div>
+        </div>
+        <div class="stat-card cyan" onclick="TMS.App.navigate('umroh')">
+          <div class="stat-icon cyan"><i data-lucide="palmtree"></i></div>
+          <div class="stat-value">${stats.totalUmroh || 0}</div>
+          <div class="stat-label">Umroh & Hajj</div>
+          <div class="stat-change up"><i data-lucide="award"></i> Rombongan Suci</div>
         </div>
       </div>
 
@@ -169,7 +222,7 @@ TMS.Dashboard = (() => {
               recentAll.map(b => `
                 <div style="padding:12px 0; border-bottom:1px solid var(--border-color); display:flex; align-items:center; gap:12px;">
                   <div style="width:36px; height:36px; border-radius:10px; background:var(--bg-primary); display:flex; align-items:center; justify-content:center; color:var(--bg-sidebar); font-size:14px;">
-                    <i data-lucide="${b._type === 'flight' ? 'plane' : b._type === 'hotel' ? 'hotel' : 'car'}" style="width:18px; height:18px;"></i>
+                    <i data-lucide="${b._type === 'flight' ? 'plane' : b._type === 'hotel' ? 'hotel' : b._type === 'rental' ? 'car' : b._type === 'tour' ? 'map' : 'palmtree'}" style="width:18px; height:18px;"></i>
                   </div>
                   <div style="flex:1;">
                     <div style="font-weight:700; font-size:13px; color:var(--text-primary);">${b.bookingCode}</div>
@@ -184,6 +237,23 @@ TMS.Dashboard = (() => {
             }
           </div>
           <button class="btn btn-ghost" style="width:100%; margin-top:16px; font-size:12px;" onclick="TMS.App.navigate('invoices')">Lihat Semua Transaksi →</button>
+        </div>
+      </div>
+
+      <!-- Row 4: Dedicated Logistics Warehouse Inventory Status -->
+      <div class="card" style="margin-top:28px; padding:24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:12px; margin-bottom:16px;">
+          <div>
+            <div style="font-weight:800; font-size:15px; color:var(--text-primary); display:flex; align-items:center; gap:8px;">
+              <i data-lucide="package" style="width:18px; height:18px; color:var(--primary);"></i>
+              Status Persediaan Logistik Rombongan (Gudang)
+            </div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Sisa alokasi kain ihram, koper, dan batik seragam jemaah</div>
+          </div>
+          <button class="btn btn-sm btn-outline" style="font-size:11px;" onclick="TMS.App.navigate('umroh'); setTimeout(() => TMS.Umroh.openInventoryModal(), 150);">Kelola Logistik →</button>
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:24px;">
+          ${inventoryListHtml || '<div style="color:var(--text-muted); font-size:13px;">Belum ada logistik terdaftar</div>'}
         </div>
       </div>
     </div>`;
@@ -311,6 +381,7 @@ TMS.Dashboard = (() => {
     const hotels   = getAll('hotels');
     const rentals  = getAll('rentals');
     const tours    = getAll('tours');
+    const umrohs   = getAll('umroh') || [];
 
     // Helper: ambil tanggal layanan dari invoice (berdasarkan bookingType & bookingId)
     function getServiceDate(inv) {
@@ -322,6 +393,8 @@ TMS.Dashboard = (() => {
         return rentals.find(r => r.id === inv.bookingId)?.pickupDate || '';
       } else if (inv.bookingType === 'tour') {
         return tours.find(t => t.id === inv.bookingId)?.departureDate || '';
+      } else if (inv.bookingType === 'umroh') {
+        return umrohs.find(u => u.id === inv.bookingId)?.departureDate || '';
       }
       return '';
     }
@@ -345,12 +418,13 @@ TMS.Dashboard = (() => {
         .filter(e => (e.date || '').startsWith(dayStr))
         .reduce((sum, e) => sum + (e.amount || 0), 0);
 
-      // 2. Modal tiket/hotel/rental/tour (kas keluar ke vendor): gunakan tanggal layanan
+      // 2. Modal tiket/hotel/rental/tour/umroh (kas keluar ke vendor): gunakan tanggal layanan
       const bookingCostOut = [
         ...flights .filter(f => (f.departureDate || '').startsWith(dayStr)).map(f => f.costPrice || 0),
         ...hotels  .filter(h => (h.checkIn      || '').startsWith(dayStr)).map(h => h.costPrice || 0),
         ...rentals .filter(r => (r.pickupDate   || '').startsWith(dayStr)).map(r => r.costPrice || 0),
         ...tours   .filter(t => (t.departureDate|| '').startsWith(dayStr)).map(t => t.costPrice || 0),
+        ...umrohs  .filter(u => (u.departureDate || '').startsWith(dayStr)).map(u => u.costPrice || 0),
       ].reduce((sum, v) => sum + v, 0);
 
       // 3. Jurnal manual (input langsung oleh user): gunakan j.date

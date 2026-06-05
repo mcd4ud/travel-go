@@ -123,7 +123,7 @@ TMS.Payment = (() => {
       accGroup.style.display = 'block';
       let filteredAccounts = [];
       if (isCash) {
-        filteredAccounts = S.getCOA().filter(a => a.type === 'asset' && a.code.startsWith('1-10') && a.code !== '1-1001'); // Kas/Kasir
+        filteredAccounts = S.getCOA().filter(a => a.type === 'asset' && a.code.startsWith('1-10') && a.code !== '1-1001').sort((a, b) => a.code.localeCompare(b.code)); // Kas/Kasir
       } else {
         filteredAccounts = S.getCOA().filter(a => a.type === 'asset' && a.code === '1-1001'); // Bank
       }

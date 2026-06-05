@@ -163,7 +163,7 @@ TMS.Flight = (() => {
       </div>
     </div>
     <div class="modal-overlay" id="flightModal">
-      <div class="modal modal-lg">
+      <div class="modal modal-full">
         <div class="modal-header">
           <span class="modal-title" id="flightModalTitle">Buat E-Tiket Pesawat</span>
           <button class="modal-close" onclick="TMS.Flight.closeForm()">✕</button>
@@ -192,6 +192,7 @@ TMS.Flight = (() => {
         <td>
           <div class="btn-group">
             <button class="btn btn-sm btn-outline" onclick="TMS.Flight.showDetail('${f.id}')" title="Detail"><i data-lucide="eye"></i></button>
+            <button class="btn btn-sm btn-outline" style="color:var(--primary-light);border-color:var(--primary-light);" onclick="TMS.Flight.showForm('${f.id}')" title="Edit"><i data-lucide="edit-3"></i></button>
             <button class="btn btn-sm btn-outline" style="color:var(--warning);border-color:var(--warning);" onclick="TMS.Refund.launchRefund('${f.id}', 'flight')" title="Ajukan Refund / Void"><i data-lucide="rotate-ccw"></i></button>
             <button class="btn btn-sm btn-whatsapp" onclick="TMS.App.shareToWhatsApp('flight', '${f.id}')" title="Kirim WhatsApp"><i data-lucide="message-square"></i></button>
             <button class="btn btn-sm btn-primary" onclick="TMS.Flight.download('${f.id}')" title="Unduh E-Tiket"><i data-lucide="download"></i></button>
@@ -257,6 +258,7 @@ TMS.Flight = (() => {
     <!-- Manual Form Section -->
     <div id="modalManualSection">
       <form id="flightForm" onsubmit="TMS.Flight.save(event)">
+        <input type="hidden" name="id" value="${data.id || ''}">
         <div class="form-section-title"><i data-lucide="hash"></i> Administrasi</div>
       <div class="form-row">
         <div class="form-group">
@@ -272,7 +274,7 @@ TMS.Flight = (() => {
           <input class="form-control font-mono" name="pnr" value="${data.pnr || ''}" required placeholder="Contoh: ABCDEF">
         </div>
       </div>
-      <input type="hidden" name="bookingCode" value="${data.itineraryId || generatedCode}">
+      <input type="hidden" name="bookingCode" value="${data.bookingCode || data.itineraryId || generatedCode}">
 
       <div class="form-section-title"><i data-lucide="user-check"></i> Data Pemesan (Customer)</div>
       <div class="form-group mb-1">
@@ -295,7 +297,7 @@ TMS.Flight = (() => {
         <div class="form-group mt-1">
           <label class="checkbox-label" style="display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:600;font-size:12px;color:var(--primary);">
             <input type="checkbox" id="copyToPassengerBtn" onchange="TMS.Flight.copyCustomerToPassenger(this.checked)">
-            Pemesan juga terbang (Salin ke Penumpang 1)
+            Pemesan juga terbang (Salin to Penumpang 1)
           </label>
         </div>
       </div>
@@ -312,19 +314,19 @@ TMS.Flight = (() => {
       <div id="passengerList">
         <div class="passenger-row card mb-1 p-1" style="background:var(--bg-secondary);">
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Nama Lengkap *</label><input class="form-control" name="p_name[]" required placeholder="Sesuai ID"></div>
+            <div class="form-group"><label class="form-label">Nama Lengkap *</label><input class="form-control" name="p_name[]" value="${data.passengers && data.passengers[0] ? data.passengers[0].name : ''}" required placeholder="Sesuai ID"></div>
             <div class="form-group"><label class="form-label">Kategori *</label>
               <select class="form-control" name="p_cat[]" required>
-                <option value="Adult">Dewasa (Adult)</option>
-                <option value="Child">Anak (Child)</option>
-                <option value="Infant">Bayi (Infant)</option>
+                <option value="Adult" ${data.passengers && data.passengers[0]?.category === 'Adult' ? 'selected' : ''}>Dewasa (Adult)</option>
+                <option value="Child" ${data.passengers && data.passengers[0]?.category === 'Child' ? 'selected' : ''}>Anak (Child)</option>
+                <option value="Infant" ${data.passengers && data.passengers[0]?.category === 'Infant' ? 'selected' : ''}>Bayi (Infant)</option>
               </select>
             </div>
-            <div class="form-group"><label class="form-label">No. Identitas *</label><input class="form-control" name="p_id[]" required placeholder="KTP/Paspor"></div>
+            <div class="form-group"><label class="form-label">No. Identitas *</label><input class="form-control" name="p_id[]" value="${data.passengers && data.passengers[0] ? data.passengers[0].idNumber : ''}" required placeholder="KTP/Paspor"></div>
           </div>
           <div class="form-row">
-            <div class="form-group"><label class="form-label">Email</label><input class="form-control" name="p_email[]" type="email"></div>
-            <div class="form-group"><label class="form-label">Telepon</label><input class="form-control" name="p_phone[]"></div>
+            <div class="form-group"><label class="form-label">Email</label><input class="form-control" name="p_email[]" type="email" value="${data.passengers && data.passengers[0] ? (data.passengers[0].email || '') : ''}"></div>
+            <div class="form-group"><label class="form-label">Telepon</label><input class="form-control" name="p_phone[]" value="${data.passengers && data.passengers[0] ? (data.passengers[0].phone || '') : ''}"></div>
           </div>
         </div>
       </div>
@@ -381,11 +383,11 @@ TMS.Flight = (() => {
         ${S.getAll('airports').map(a => `<option value="${a.city} (${a.code})">${a.name} - ${a.country}</option>`).join('')}
       </datalist>
       <div class="form-row-3">
-        <div class="form-group"><label class="form-label">Tanggal Berangkat *</label><input class="form-control" type="date" name="departureDate" required></div>
-        <div class="form-group"><label class="form-label">Waktu Berangkat</label><input class="form-control" type="time" name="departureTime"></div>
+        <div class="form-group"><label class="form-label">Tanggal Berangkat *</label><input class="form-control" type="date" name="departureDate" value="${data.departureDate||''}" required></div>
+        <div class="form-group"><label class="form-label">Waktu Berangkat</label><input class="form-control" type="time" name="departureTime" value="${data.departureTime||''}"></div>
         <div class="form-group"><label class="form-label">Bagasi (Departure)</label>
           <div class="input-group">
-            <input class="form-control" type="number" name="departureBaggage" value="20" placeholder="20">
+            <input class="form-control" type="number" name="departureBaggage" value="${data.departureBaggage !== undefined ? data.departureBaggage : '20'}" placeholder="20">
             <span class="input-suffix">kg</span>
           </div>
         </div>
@@ -419,7 +421,7 @@ TMS.Flight = (() => {
           <div class="form-group"><label class="form-label">Waktu Pulang</label><input class="form-control" type="time" name="returnDepartureTime" value="${data.returnDepartureTime||''}"></div>
           <div class="form-group"><label class="form-label">Bagasi (Return)</label>
             <div class="input-group">
-              <input class="form-control" type="number" name="returnBaggage" value="20" placeholder="20">
+              <input class="form-control" type="number" name="returnBaggage" value="${data.returnBaggage !== undefined ? data.returnBaggage : '20'}" placeholder="20">
               <span class="input-suffix">kg</span>
             </div>
           </div>
@@ -437,7 +439,7 @@ TMS.Flight = (() => {
           <label class="form-label" style="color:var(--primary-light); font-weight:700;">Bayar Vendor Menggunakan Akun: *</label>
           <select class="form-control" name="paymentAccount" required style="border-color:var(--primary-light);">
             <option value="2-2000" ${data.paymentAccount === '2-2000' || !data.paymentAccount ? 'selected' : ''}>2-2000 - Utang Usaha (Belum Bayar)</option>
-            ${S.getCOA().filter(a => a.type === 'asset' && (a.code.startsWith('1-10') || a.code.startsWith('1-13'))).map(a => `<option value="${a.code}" ${data.paymentAccount === a.code ? 'selected' : ''}>${a.code} - ${a.name} (Saldo: ${S.formatCurrency(a.balance)})</option>`).join('')}
+            ${S.getCOA().filter(a => a.type === 'asset' && (a.code.startsWith('1-10') || a.code.startsWith('1-13'))).sort((a, b) => a.code.localeCompare(b.code)).map(a => `<option value="${a.code}" ${data.paymentAccount === a.code ? 'selected' : ''}>${a.code} - ${a.name} (Saldo: ${S.formatCurrency(a.balance)})</option>`).join('')}
           </select>
           <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Pilih akun kas/bank/deposit yang digunakan untuk membayar modal tiket ke vendor/maskapai.</div>
         </div>
@@ -448,15 +450,15 @@ TMS.Flight = (() => {
         <div class="form-row-3">
           <div class="form-group">
             <label class="form-label">Harga Modal (Vendor) *</label>
-            <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="number" id="ow_costPriceDep" name="costPriceDep" min="0" placeholder="0" value="${data.costPriceDep || data.costPrice || ''}" oninput="TMS.Flight.calcMargin()" ${data.tripType === 'round' ? 'disabled' : ''}></div>
+            <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="text" id="ow_costPriceDep" name="costPriceDep" placeholder="0" value="${S.formatInt(data.costPriceDep || data.costPrice || '')}" oninput="TMS.App.formatNumberInput(this); TMS.Flight.calcMargin()" ${data.tripType === 'round' ? 'disabled' : ''}></div>
           </div>
           <div class="form-group">
             <label class="form-label">Margin Laba Kotor *</label>
-            <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="number" id="ow_marginDep" min="0" placeholder="0" value="${(data.sellingPriceDep !== undefined && data.costPriceDep !== undefined) ? (data.sellingPriceDep - data.costPriceDep) : (data.sellingPrice !== undefined && data.costPrice !== undefined ? data.sellingPrice - data.costPrice : '')}" oninput="TMS.Flight.calcMargin()" ${data.tripType === 'round' ? 'disabled' : ''}></div>
+            <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="text" id="ow_marginDep" placeholder="0" value="${S.formatInt((data.sellingPriceDep !== undefined && data.costPriceDep !== undefined) ? (data.sellingPriceDep - data.costPriceDep) : (data.sellingPrice !== undefined && data.costPrice !== undefined ? data.sellingPrice - data.costPrice : ''))}" oninput="TMS.App.formatNumberInput(this); TMS.Flight.calcMargin()" ${data.tripType === 'round' ? 'disabled' : ''}></div>
           </div>
           <div class="form-group">
             <label class="form-label">Harga Jual (Pelanggan)</label>
-            <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="number" id="ow_sellingPriceDep" name="sellingPriceDep" min="0" placeholder="0" value="${data.sellingPriceDep || data.sellingPrice || ''}" readonly style="background:var(--bg-secondary);" ${data.tripType === 'round' ? 'disabled' : ''}></div>
+            <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="text" id="ow_sellingPriceDep" name="sellingPriceDep" placeholder="0" value="${S.formatInt(data.sellingPriceDep || data.sellingPrice || '')}" readonly style="background:var(--bg-secondary);" ${data.tripType === 'round' ? 'disabled' : ''}></div>
           </div>
         </div>
       </div>
@@ -468,15 +470,15 @@ TMS.Flight = (() => {
           <div class="form-row-3">
             <div class="form-group">
               <label class="form-label">Harga Modal Pergi *</label>
-              <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="number" id="rt_costPriceDep" name="costPriceDep" min="0" placeholder="0" value="${data.costPriceDep || ''}" oninput="TMS.Flight.calcMargin()" ${data.tripType !== 'round' ? 'disabled' : ''}></div>
+              <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="text" id="rt_costPriceDep" name="costPriceDep" placeholder="0" value="${S.formatInt(data.costPriceDep || '')}" oninput="TMS.App.formatNumberInput(this); TMS.Flight.calcMargin()" ${data.tripType !== 'round' ? 'disabled' : ''}></div>
             </div>
             <div class="form-group">
               <label class="form-label">Margin Pergi *</label>
-              <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="number" id="rt_marginDep" min="0" placeholder="0" value="${(data.sellingPriceDep !== undefined && data.costPriceDep !== undefined) ? (data.sellingPriceDep - data.costPriceDep) : ''}" oninput="TMS.Flight.calcMargin()" ${data.tripType !== 'round' ? 'disabled' : ''}></div>
+              <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="text" id="rt_marginDep" placeholder="0" value="${S.formatInt((data.sellingPriceDep !== undefined && data.costPriceDep !== undefined) ? (data.sellingPriceDep - data.costPriceDep) : '')}" oninput="TMS.App.formatNumberInput(this); TMS.Flight.calcMargin()" ${data.tripType !== 'round' ? 'disabled' : ''}></div>
             </div>
             <div class="form-group">
               <label class="form-label">Harga Jual Pergi</label>
-              <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="number" id="rt_sellingPriceDep" name="sellingPriceDep" min="0" placeholder="0" value="${data.sellingPriceDep || ''}" readonly style="background:var(--bg-secondary);" ${data.tripType !== 'round' ? 'disabled' : ''}></div>
+              <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="text" id="rt_sellingPriceDep" name="sellingPriceDep" placeholder="0" value="${S.formatInt(data.sellingPriceDep || '')}" readonly style="background:var(--bg-secondary);" ${data.tripType !== 'round' ? 'disabled' : ''}></div>
             </div>
           </div>
         </div>
@@ -485,15 +487,15 @@ TMS.Flight = (() => {
           <div class="form-row-3">
             <div class="form-group">
               <label class="form-label">Harga Modal Pulang *</label>
-              <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="number" id="rt_costPriceRet" name="costPriceRet" min="0" placeholder="0" value="${data.costPriceRet || ''}" oninput="TMS.Flight.calcMargin()" ${data.tripType !== 'round' ? 'disabled' : ''}></div>
+              <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="text" id="rt_costPriceRet" name="costPriceRet" placeholder="0" value="${S.formatInt(data.costPriceRet || '')}" oninput="TMS.App.formatNumberInput(this); TMS.Flight.calcMargin()" ${data.tripType !== 'round' ? 'disabled' : ''}></div>
             </div>
             <div class="form-group">
               <label class="form-label">Margin Pulang *</label>
-              <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="number" id="rt_marginRet" min="0" placeholder="0" value="${(data.sellingPriceRet !== undefined && data.costPriceRet !== undefined) ? (data.sellingPriceRet - data.costPriceRet) : ''}" oninput="TMS.Flight.calcMargin()" ${data.tripType !== 'round' ? 'disabled' : ''}></div>
+              <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="text" id="rt_marginRet" placeholder="0" value="${S.formatInt((data.sellingPriceRet !== undefined && data.costPriceRet !== undefined) ? (data.sellingPriceRet - data.costPriceRet) : '')}" oninput="TMS.App.formatNumberInput(this); TMS.Flight.calcMargin()" ${data.tripType !== 'round' ? 'disabled' : ''}></div>
             </div>
             <div class="form-group">
               <label class="form-label">Harga Jual Pulang</label>
-              <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="number" id="rt_sellingPriceRet" name="sellingPriceRet" min="0" placeholder="0" value="${data.sellingPriceRet || ''}" readonly style="background:var(--bg-secondary);" ${data.tripType !== 'round' ? 'disabled' : ''}></div>
+              <div class="input-group"><span class="input-prefix">Rp</span><input class="form-control" type="text" id="rt_sellingPriceRet" name="sellingPriceRet" placeholder="0" value="${S.formatInt(data.sellingPriceRet || '')}" readonly style="background:var(--bg-secondary);" ${data.tripType !== 'round' ? 'disabled' : ''}></div>
             </div>
           </div>
         </div>
@@ -547,10 +549,34 @@ TMS.Flight = (() => {
     if (window.lucide) lucide.createIcons();
   }
 
-  function showForm() {
-    document.getElementById('flightModalTitle').textContent = 'Buat E-Tiket Pesawat';
-    document.getElementById('flightModalBody').innerHTML = renderForm();
-    document.getElementById('flightModal').classList.add('active');
+  function showForm(id = null) {
+    if (id) {
+      const f = S.getById('flights', id);
+      if (!f) return;
+      document.getElementById('flightModalTitle').textContent = 'Edit E-Tiket Pesawat';
+      document.getElementById('flightModalBody').innerHTML = renderForm(f);
+      document.getElementById('flightModal').classList.add('active');
+      
+      // Populate additional passengers if any
+      if (f.passengers && f.passengers.length > 1) {
+        for (let i = 1; i < f.passengers.length; i++) {
+          addPassengerRow({
+            name: f.passengers[i].name || '',
+            category: f.passengers[i].category || 'Adult',
+            idNumber: f.passengers[i].idNumber || '',
+            email: f.passengers[i].email || '',
+            phone: f.passengers[i].phone || ''
+          });
+        }
+      }
+      
+      // Toggle leg displays and prices
+      toggleTripType(f.tripType || 'oneway');
+    } else {
+      document.getElementById('flightModalTitle').textContent = 'Buat E-Tiket Pesawat';
+      document.getElementById('flightModalBody').innerHTML = renderForm();
+      document.getElementById('flightModal').classList.add('active');
+    }
     if (window.lucide) lucide.createIcons();
   }
 
@@ -722,23 +748,23 @@ TMS.Flight = (() => {
     let costDep, sellDep, costRet = 0, sellRet = 0;
     let marginDep = 0, marginRet = 0;
     if (isRound) {
-      costDep = parseFloat(document.getElementById('rt_costPriceDep')?.value) || 0;
-      marginDep = parseFloat(document.getElementById('rt_marginDep')?.value) || 0;
+      costDep = S.parseNumber(document.getElementById('rt_costPriceDep')?.value) || 0;
+      marginDep = S.parseNumber(document.getElementById('rt_marginDep')?.value) || 0;
       sellDep = costDep + marginDep;
       const elSellDep = document.getElementById('rt_sellingPriceDep');
-      if (elSellDep) elSellDep.value = sellDep;
+      if (elSellDep) elSellDep.value = S.formatInt(sellDep);
 
-      costRet = parseFloat(document.getElementById('rt_costPriceRet')?.value) || 0;
-      marginRet = parseFloat(document.getElementById('rt_marginRet')?.value) || 0;
+      costRet = S.parseNumber(document.getElementById('rt_costPriceRet')?.value) || 0;
+      marginRet = S.parseNumber(document.getElementById('rt_marginRet')?.value) || 0;
       sellRet = costRet + marginRet;
       const elSellRet = document.getElementById('rt_sellingPriceRet');
-      if (elSellRet) elSellRet.value = sellRet;
+      if (elSellRet) elSellRet.value = S.formatInt(sellRet);
     } else {
-      costDep = parseFloat(document.getElementById('ow_costPriceDep')?.value) || 0;
-      marginDep = parseFloat(document.getElementById('ow_marginDep')?.value) || 0;
+      costDep = S.parseNumber(document.getElementById('ow_costPriceDep')?.value) || 0;
+      marginDep = S.parseNumber(document.getElementById('ow_marginDep')?.value) || 0;
       sellDep = costDep + marginDep;
       const elSellDep = document.getElementById('ow_sellingPriceDep');
-      if (elSellDep) elSellDep.value = sellDep;
+      if (elSellDep) elSellDep.value = S.formatInt(sellDep);
     }
 
     const totalCost = costDep + costRet;
@@ -791,21 +817,71 @@ TMS.Flight = (() => {
     booking.passengerEmail = booking.customerEmail || booking.passengers[0].email;
     
     // Parse individual leg prices
-    booking.costPriceDep = parseFloat(booking.costPriceDep) || 0;
-    booking.sellingPriceDep = parseFloat(booking.sellingPriceDep) || 0;
-    booking.costPriceRet = parseFloat(booking.costPriceRet) || 0;
-    booking.sellingPriceRet = parseFloat(booking.sellingPriceRet) || 0;
+    booking.costPriceDep = S.parseNumber(booking.costPriceDep) || 0;
+    booking.sellingPriceDep = S.parseNumber(booking.sellingPriceDep) || 0;
+    booking.costPriceRet = S.parseNumber(booking.costPriceRet) || 0;
+    booking.sellingPriceRet = S.parseNumber(booking.sellingPriceRet) || 0;
     // Compute totals (hidden fields should already be set, but compute as fallback)
     booking.costPrice = booking.costPriceDep + booking.costPriceRet;
     booking.sellingPrice = booking.sellingPriceDep + booking.sellingPriceRet;
-    booking.paymentStatus = 'unpaid';
     
-    const saved = S.add('flights', booking);
+    const isEdit = !!booking.id;
+    let existing = null;
+    let isPaid = false;
+    if (isEdit) {
+      existing = S.getById('flights', booking.id);
+      if (existing) {
+        isPaid = existing.paymentStatus === 'paid';
+        // Clean up financial data associated with old bookingCode/bookingId
+        const invoices = S.getAll('invoices').filter(inv => inv.bookingId === booking.id);
+        invoices.forEach(inv => {
+          const payments = S.getAll('payments');
+          payments.forEach(p => { if (p.invoiceId === inv.id) S.remove('payments', p.id); });
+          S.remove('invoices', inv.id);
+        });
+        const journals = S.getAll('journals');
+        journals.forEach(j => {
+          if (j.reference === existing.bookingCode) S.remove('journals', j.id);
+        });
+      }
+    }
+
+    if (isEdit && existing) {
+      booking.bookingCode = existing.bookingCode;
+      booking.paymentStatus = existing.paymentStatus || 'unpaid';
+      S.update('flights', booking.id, booking);
+      TMS.App.toast('E-Tiket berhasil diperbarui!', 'success');
+    } else {
+      booking.bookingCode = booking.bookingCode || booking.itineraryId || generatedCode;
+      booking.paymentStatus = 'unpaid';
+      S.add('flights', booking);
+      TMS.App.toast('E-Tiket berhasil diterbitkan!', 'success');
+    }
+
+    const saved = S.getById('flights', isEdit ? booking.id : booking.id || booking.bookingCode);
     createJournal(saved);
-    createInvoice(saved);
+    const inv = createInvoice(saved);
+
+    if (isEdit && isPaid) {
+      S.update('flights', saved.id, { paymentStatus: 'paid' });
+      S.update('invoices', inv.id, { paymentStatus: 'paid', paidAt: existing.paidAt || new Date().toISOString() });
+      const j = {
+        journalNumber: S.generateCode('journal'),
+        date: new Date().toISOString().split('T')[0],
+        description: `Penerimaan Kas - ${saved.bookingCode}`,
+        reference: saved.bookingCode,
+        type: 'payment_received',
+        entries: [
+          { accountCode: '1-1000', accountName: 'Kas', debit: inv.total, credit: 0 },
+          { accountCode: '1-1100', accountName: 'Piutang Usaha', debit: 0, credit: inv.total }
+        ]
+      };
+      S.add('journals', j);
+      S.recalculateCOA();
+    }
+
     closeForm();
     TMS.App.navigate('flights');
-    TMS.App.toast('E-Tiket berhasil diterbitkan!', 'success');
   }
 
   function toggleTripType(type) {
@@ -818,13 +894,13 @@ TMS.Flight = (() => {
       section.classList.remove('hidden');
       section.querySelectorAll('input').forEach(i => { if(i.name !== 'returnArrivalDate' && i.name !== 'returnArrivalTerminal' && i.name !== 'returnArrivalTime' && i.name !== 'returnDepartureTerminal') i.required = true; });
       // Switch price sections
-      if (priceOneway) { priceOneway.style.display = 'none'; priceOneway.querySelectorAll('input[type="number"]').forEach(i => i.disabled = true); }
-      if (priceRound)  { priceRound.style.display = '';     priceRound.querySelectorAll('input[type="number"]').forEach(i => i.disabled = false); }
+      if (priceOneway) { priceOneway.style.display = 'none'; priceOneway.querySelectorAll('input').forEach(i => i.disabled = true); }
+      if (priceRound)  { priceRound.style.display = '';     priceRound.querySelectorAll('input').forEach(i => i.disabled = false); }
     } else {
       section.classList.add('hidden');
       section.querySelectorAll('input').forEach(i => i.required = false);
-      if (priceOneway) { priceOneway.style.display = '';     priceOneway.querySelectorAll('input[type="number"]').forEach(i => i.disabled = false); }
-      if (priceRound)  { priceRound.style.display = 'none'; priceRound.querySelectorAll('input[type="number"]').forEach(i => i.disabled = true); }
+      if (priceOneway) { priceOneway.style.display = '';     priceOneway.querySelectorAll('input').forEach(i => i.disabled = false); }
+      if (priceRound)  { priceRound.style.display = 'none'; priceRound.querySelectorAll('input').forEach(i => i.disabled = true); }
     }
     calcMargin();
   }
@@ -1259,10 +1335,10 @@ TMS.Flight = (() => {
     const depMargin = Math.round(depCost * 0.10);
     const retMargin = Math.round(retCost * 0.10);
     
-    if (rtCostDep) rtCostDep.value = depCost;
-    if (rtMarginDep) rtMarginDep.value = depMargin;
-    if (rtCostRet) rtCostRet.value = retCost;
-    if (rtMarginRet) rtMarginRet.value = retMargin;
+    if (rtCostDep) rtCostDep.value = S.formatInt(depCost);
+    if (rtMarginDep) rtMarginDep.value = S.formatInt(depMargin);
+    if (rtCostRet) rtCostRet.value = S.formatInt(retCost);
+    if (rtMarginRet) rtMarginRet.value = S.formatInt(retMargin);
     
     const pList = document.getElementById('passengerList');
     if (pList) {
@@ -1333,8 +1409,8 @@ TMS.Flight = (() => {
     const owMargin = document.getElementById('ow_marginDep');
     const costPrice = offer.costPriceTotal;
     const defaultMargin = Math.round(costPrice * 0.10);
-    if (owCost) owCost.value = costPrice;
-    if (owMargin) owMargin.value = defaultMargin;
+    if (owCost) owCost.value = S.formatInt(costPrice);
+    if (owMargin) owMargin.value = S.formatInt(defaultMargin);
     
     const pList = document.getElementById('passengerList');
     if (pList) {

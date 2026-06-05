@@ -91,9 +91,9 @@ TMS.Accounting = (() => {
   // ---- INCOME STATEMENT ----
   function renderIncomeStatement() {
     const d = getBalanceData();
-    const revenues = d.coa.filter(a => a.type === 'revenue');
-    const cogs = d.coa.filter(a => a.type === 'cogs');
-    const expenses = d.coa.filter(a => a.type === 'expense');
+    const revenues = d.coa.filter(a => a.type === 'revenue').sort((a, b) => a.code.localeCompare(b.code));
+    const cogs = d.coa.filter(a => a.type === 'cogs').sort((a, b) => a.code.localeCompare(b.code));
+    const expenses = d.coa.filter(a => a.type === 'expense').sort((a, b) => a.code.localeCompare(b.code));
     const periodStr = `${S.formatDate(startDate)} - ${S.formatDate(endDate)}`;
 
     return `
@@ -146,17 +146,17 @@ TMS.Accounting = (() => {
   // ---- BALANCE SHEET ----
   function renderBalanceSheet() {
     const d = getBalanceData(true);
-    const assets = d.coa.filter(a => a.type === 'asset');
-    const liabilities = d.coa.filter(a => a.type === 'liability');
-    const equities = d.coa.filter(a => a.type === 'equity');
+    const assets = d.coa.filter(a => a.type === 'asset').sort((a, b) => a.code.localeCompare(b.code));
+    const liabilities = d.coa.filter(a => a.type === 'liability').sort((a, b) => a.code.localeCompare(b.code));
+    const equities = d.coa.filter(a => a.type === 'equity').sort((a, b) => a.code.localeCompare(b.code));
     const retainedEarnings = d.netProfit;
     const totalEquityWithEarnings = d.totalEquity + retainedEarnings;
     const totalLiabEquity = d.totalLiability + totalEquityWithEarnings;
 
     // Filter and sort assets to group sub-deposits under the parent Deposit Vendor
-    const regularAssets = assets.filter(a => a.code !== '1-1300' && !a.code.startsWith('1-1300-'));
+    const regularAssets = assets.filter(a => a.code !== '1-1300' && !a.code.startsWith('1-1300-')).sort((a, b) => a.code.localeCompare(b.code));
     const parentDeposit = assets.find(a => a.code === '1-1300');
-    const subDeposits = assets.filter(a => a.code.startsWith('1-1300-'));
+    const subDeposits = assets.filter(a => a.code.startsWith('1-1300-')).sort((a, b) => a.code.localeCompare(b.code));
 
     return `
     <div class="fade-in">
@@ -309,7 +309,7 @@ TMS.Accounting = (() => {
 
   // ---- GENERAL LEDGER ----
   function renderLedger() {
-    const coa = S.getCOA();
+    const coa = S.getCOA().slice().sort((a, b) => a.code.localeCompare(b.code));
     const journals = S.getAll('journals');
     const selectedCode = window._ledgerAccount || coa[0]?.code;
 
@@ -450,7 +450,7 @@ TMS.Accounting = (() => {
   }
 
   function renderForm(j = null) {
-    const coa = S.getCOA();
+    const coa = S.getCOA().slice().sort((a, b) => a.code.localeCompare(b.code));
     const nextCode = j ? j.journalNumber : S.generateCode('journal');
     return `
     <form id="journalForm" onsubmit="TMS.Accounting.saveJournal(event, ${j ? `'${j.id}'` : 'null'})">
@@ -519,8 +519,8 @@ TMS.Accounting = (() => {
           ${coa.map(a => `<option value="${a.code}" ${e && e.accountCode === a.code ? 'selected' : ''}>${a.code} - ${a.name}</option>`).join('')}
         </select>
       </td>
-      <td><input type="number" class="form-control form-control-sm text-right font-mono" name="debit[]" value="${e ? e.debit || 0 : 0}" min="0" oninput="TMS.Accounting.calcJournalTotal()"></td>
-      <td><input type="number" class="form-control form-control-sm text-right font-mono" name="credit[]" value="${e ? e.credit || 0 : 0}" min="0" oninput="TMS.Accounting.calcJournalTotal()"></td>
+      <td><input type="text" class="form-control form-control-sm text-right font-mono" name="debit[]" value="${S.formatInt(e ? e.debit || 0 : 0)}" oninput="TMS.App.formatNumberInput(this); TMS.Accounting.calcJournalTotal()"></td>
+      <td><input type="text" class="form-control form-control-sm text-right font-mono" name="credit[]" value="${S.formatInt(e ? e.credit || 0 : 0)}" oninput="TMS.App.formatNumberInput(this); TMS.Accounting.calcJournalTotal()"></td>
       <td><button type="button" class="btn btn-sm btn-ghost text-danger p-0" onclick="this.closest('tr').remove();TMS.Accounting.calcJournalTotal();">✕</button></td>
     </tr>`;
   }
@@ -529,14 +529,14 @@ TMS.Accounting = (() => {
     const body = document.getElementById('journalEntryBody');
     const tr = document.createElement('tr');
     tr.className = 'entry-row';
-    tr.innerHTML = renderEntryRow(S.getCOA());
+    tr.innerHTML = renderEntryRow(S.getCOA().slice().sort((a, b) => a.code.localeCompare(b.code)));
     body.appendChild(tr);
   }
 
   function calcJournalTotal() {
     let totalD = 0, totalC = 0;
-    document.querySelectorAll('[name="debit[]"]').forEach(el => totalD += parseFloat(el.value) || 0);
-    document.querySelectorAll('[name="credit[]"]').forEach(el => totalC += parseFloat(el.value) || 0);
+    document.querySelectorAll('[name="debit[]"]').forEach(el => totalD += S.parseNumber(el.value) || 0);
+    document.querySelectorAll('[name="credit[]"]').forEach(el => totalC += S.parseNumber(el.value) || 0);
     
     const dDisplay = document.getElementById('totalDebitDisplay');
     const cDisplay = document.getElementById('totalCreditDisplay');
@@ -561,8 +561,8 @@ TMS.Accounting = (() => {
     const fd = new FormData(form);
     
     const accCodes = fd.getAll('accountCode[]');
-    const debits = fd.getAll('debit[]').map(v => parseFloat(v) || 0);
-    const credits = fd.getAll('credit[]').map(v => parseFloat(v) || 0);
+    const debits = fd.getAll('debit[]').map(v => S.parseNumber(v) || 0);
+    const credits = fd.getAll('credit[]').map(v => S.parseNumber(v) || 0);
     
     let totalD = debits.reduce((a, b) => a + b, 0);
     let totalC = credits.reduce((a, b) => a + b, 0);
@@ -704,14 +704,14 @@ TMS.Accounting = (() => {
     const d = getBalanceData();
     const rows = [];
     rows.push(['PENDAPATAN', '', '', '']);
-    d.coa.filter(a => a.type === 'revenue').forEach(a => rows.push(['  ' + a.name, a.code, S.formatCurrency(a.balance), '']));
+    d.coa.filter(a => a.type === 'revenue').sort((a, b) => a.code.localeCompare(b.code)).forEach(a => rows.push(['  ' + a.name, a.code, S.formatCurrency(a.balance), '']));
     rows.push(['Total Pendapatan', '', '', S.formatCurrency(d.totalRevenue)]);
     rows.push(['BEBAN POKOK PENJUALAN (BPP)', '', '', '']);
-    d.coa.filter(a => a.type === 'cogs').forEach(a => rows.push(['  ' + a.name, a.code, S.formatCurrency(a.balance), '']));
+    d.coa.filter(a => a.type === 'cogs').sort((a, b) => a.code.localeCompare(b.code)).forEach(a => rows.push(['  ' + a.name, a.code, S.formatCurrency(a.balance), '']));
     rows.push(['Total BPP', '', '', '(' + S.formatCurrency(d.totalCOGS) + ')']);
     rows.push(['LABA KOTOR', '', '', S.formatCurrency(d.grossProfit)]);
     rows.push(['BEBAN OPERASIONAL', '', '', '']);
-    d.coa.filter(a => a.type === 'expense').forEach(a => rows.push(['  ' + a.name, a.code, S.formatCurrency(a.balance), '']));
+    d.coa.filter(a => a.type === 'expense').sort((a, b) => a.code.localeCompare(b.code)).forEach(a => rows.push(['  ' + a.name, a.code, S.formatCurrency(a.balance), '']));
     rows.push(['Total Beban Operasional', '', '', '(' + S.formatCurrency(d.totalExpense) + ')']);
     rows.push(['LABA BERSIH', '', '', S.formatCurrency(d.netProfit)]);
     const subtitle = `Periode: ${S.formatDate(startDate)} - ${S.formatDate(endDate)}`;
@@ -722,14 +722,14 @@ TMS.Accounting = (() => {
     const d = getBalanceData();
     const rows = [];
     rows.push(['PENDAPATAN', '', '', '']);
-    d.coa.filter(a => a.type === 'revenue').forEach(a => rows.push(['  ' + a.name, a.code, a.balance, '']));
+    d.coa.filter(a => a.type === 'revenue').sort((a, b) => a.code.localeCompare(b.code)).forEach(a => rows.push(['  ' + a.name, a.code, a.balance, '']));
     rows.push(['Total Pendapatan', '', '', d.totalRevenue]);
     rows.push(['BEBAN POKOK PENJUALAN (BPP)', '', '', '']);
-    d.coa.filter(a => a.type === 'cogs').forEach(a => rows.push(['  ' + a.name, a.code, a.balance, '']));
+    d.coa.filter(a => a.type === 'cogs').sort((a, b) => a.code.localeCompare(b.code)).forEach(a => rows.push(['  ' + a.name, a.code, a.balance, '']));
     rows.push(['Total BPP', '', '', -Math.abs(d.totalCOGS)]);
     rows.push(['LABA KOTOR', '', '', d.grossProfit]);
     rows.push(['BEBAN OPERASIONAL', '', '', '']);
-    d.coa.filter(a => a.type === 'expense').forEach(a => rows.push(['  ' + a.name, a.code, a.balance, '']));
+    d.coa.filter(a => a.type === 'expense').sort((a, b) => a.code.localeCompare(b.code)).forEach(a => rows.push(['  ' + a.name, a.code, a.balance, '']));
     rows.push(['Total Beban Operasional', '', '', -Math.abs(d.totalExpense)]);
     rows.push(['LABA BERSIH', '', '', d.netProfit]);
     TMS.Excel.exportReport('Laporan Laba Rugi', ['Keterangan', 'Kode Akun', 'Jumlah', 'Total'], rows);
@@ -741,7 +741,7 @@ TMS.Accounting = (() => {
     rows.push(['ASET', '', '']);
     
     // Regular assets
-    d.coa.filter(a => a.type === 'asset' && a.code !== '1-1300' && !a.code.startsWith('1-1300-')).forEach(a => {
+    d.coa.filter(a => a.type === 'asset' && a.code !== '1-1300' && !a.code.startsWith('1-1300-')).sort((a, b) => a.code.localeCompare(b.code)).forEach(a => {
       rows.push(['  ' + a.name, a.code, S.formatCurrency(a.balance)]);
     });
 
@@ -751,16 +751,16 @@ TMS.Accounting = (() => {
       rows.push(['  ' + parentDeposit.name, parentDeposit.code, S.formatCurrency(parentDeposit.balance)]);
       
       // Sub deposits
-      d.coa.filter(a => a.code.startsWith('1-1300-')).forEach(sa => {
+      d.coa.filter(a => a.code.startsWith('1-1300-')).sort((a, b) => a.code.localeCompare(b.code)).forEach(sa => {
         rows.push(['      - ' + sa.name, sa.code, S.formatCurrency(sa.balance)]);
       });
     }
 
     rows.push(['TOTAL ASET', '', S.formatCurrency(d.totalAsset)]);
     rows.push(['KEWAJIBAN', '', '']);
-    d.coa.filter(a => a.type === 'liability').forEach(a => rows.push(['  ' + a.name, a.code, S.formatCurrency(a.balance)]));
+    d.coa.filter(a => a.type === 'liability').sort((a, b) => a.code.localeCompare(b.code)).forEach(a => rows.push(['  ' + a.name, a.code, S.formatCurrency(a.balance)]));
     rows.push(['EKUITAS', '', '']);
-    d.coa.filter(a => a.type === 'equity').forEach(a => rows.push(['  ' + a.name, a.code, S.formatCurrency(a.balance)]));
+    d.coa.filter(a => a.type === 'equity').sort((a, b) => a.code.localeCompare(b.code)).forEach(a => rows.push(['  ' + a.name, a.code, S.formatCurrency(a.balance)]));
     rows.push(['  Laba Bersih Berjalan', '-', S.formatCurrency(d.netProfit)]);
     rows.push(['TOTAL KEWAJIBAN + EKUITAS', '', S.formatCurrency(d.totalLiability + d.totalEquity + d.netProfit)]);
     const subtitle = `Per Tanggal: ${S.formatDate(endDate)}`;
@@ -773,7 +773,7 @@ TMS.Accounting = (() => {
     rows.push(['ASET', '', '']);
     
     // Regular assets
-    d.coa.filter(a => a.type === 'asset' && a.code !== '1-1300' && !a.code.startsWith('1-1300-')).forEach(a => {
+    d.coa.filter(a => a.type === 'asset' && a.code !== '1-1300' && !a.code.startsWith('1-1300-')).sort((a, b) => a.code.localeCompare(b.code)).forEach(a => {
       rows.push(['  ' + a.name, a.code, a.balance]);
     });
 
@@ -783,16 +783,16 @@ TMS.Accounting = (() => {
       rows.push(['  ' + parentDeposit.name, parentDeposit.code, parentDeposit.balance]);
       
       // Sub deposits
-      d.coa.filter(a => a.code.startsWith('1-1300-')).forEach(sa => {
+      d.coa.filter(a => a.code.startsWith('1-1300-')).sort((a, b) => a.code.localeCompare(b.code)).forEach(sa => {
         rows.push(['      - ' + sa.name, sa.code, sa.balance]);
       });
     }
 
     rows.push(['TOTAL ASET', '', d.totalAsset]);
     rows.push(['KEWAJIBAN', '', '']);
-    d.coa.filter(a => a.type === 'liability').forEach(a => rows.push(['  ' + a.name, a.code, a.balance]));
+    d.coa.filter(a => a.type === 'liability').sort((a, b) => a.code.localeCompare(b.code)).forEach(a => rows.push(['  ' + a.name, a.code, a.balance]));
     rows.push(['EKUITAS', '', '']);
-    d.coa.filter(a => a.type === 'equity').forEach(a => rows.push(['  ' + a.name, a.code, a.balance]));
+    d.coa.filter(a => a.type === 'equity').sort((a, b) => a.code.localeCompare(b.code)).forEach(a => rows.push(['  ' + a.name, a.code, a.balance]));
     rows.push(['  Laba Bersih Berjalan', '-', d.netProfit]);
     rows.push(['TOTAL KEWAJIBAN + EKUITAS', '', d.totalLiability + d.totalEquity + d.netProfit]);
     TMS.Excel.exportReport('Neraca', ['Keterangan', 'Kode Akun', 'Nilai'], rows);
@@ -831,10 +831,482 @@ TMS.Accounting = (() => {
     TMS.Excel.exportReport('Laporan Arus Kas', ['Keterangan', 'Jumlah'], rows);
   }
 
+  let selectedGroupBookingId = null;
+
+  function setSelectedGroupBookingId(id) {
+    selectedGroupBookingId = id;
+  }
+
+  function calculateGroupProfitability(bookingId) {
+    const umroh = S.getAll('umroh') || [];
+    const tours = S.getAll('tours') || [];
+    let booking = umroh.find(u => u.id === bookingId);
+    let type = 'umroh';
+    if (!booking) {
+      booking = tours.find(t => t.id === bookingId);
+      type = 'tour';
+    }
+    if (!booking) return null;
+
+    // 1. Pendapatan Kotor (Gross Revenue)
+    const revenueAccrual = booking.sellingPrice || 0;
+    
+    // Payments received (Cash)
+    const invoices = S.getAll('invoices').filter(inv => inv.bookingId === booking.id);
+    let revenueCash = 0;
+    invoices.forEach(inv => {
+      const payments = S.getAll('payments').filter(p => p.invoiceId === inv.id && p.status === 'verified');
+      revenueCash += payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    });
+
+    // 2. Direct COGS (BPP / Biaya Pokok Penjualan)
+    // Base cost price (est. COGS per jemaah * Pax count)
+    const baseCOGS = booking.costPrice || 0;
+
+    // Flights COGS
+    const flights = S.getAll('flights').filter(f => f.bookingCode === booking.bookingCode || f.reference === booking.bookingCode);
+    const flightsCOGS = flights.reduce((sum, f) => sum + (f.costPrice || 0), 0);
+
+    // Hotels COGS
+    const hotels = S.getAll('hotels').filter(h => h.bookingCode === booking.bookingCode || h.reference === booking.bookingCode);
+    const hotelsCOGS = hotels.reduce((sum, h) => sum + (h.costPrice || 0), 0);
+
+    // Logistics COGS (Only for Umroh)
+    let logisticsCOGS = 0;
+    let ihramCount = 0;
+    let koperCount = 0;
+    let batikCount = 0;
+    if (type === 'umroh') {
+      (booking.participants || []).forEach(p => {
+        if (p.ihramSerah) { logisticsCOGS += 150000; ihramCount++; }
+        if (p.koperSerah) { logisticsCOGS += 450000; koperCount++; }
+        if (p.batikSerah) { logisticsCOGS += 100000; batikCount++; }
+      });
+    }
+
+    // Total Direct COGS (BPP)
+    const totalCOGS = baseCOGS + flightsCOGS + hotelsCOGS + logisticsCOGS;
+
+    // 3. Extra Expenses (Direct Operational Expenses from GL Jurnal)
+    const journals = S.getAll('journals').filter(j => j.reference === booking.bookingCode);
+    // Find debit entries in expense accounts (starting with '5-' or '6-', but not BPP which is handled as direct COGS)
+    let extraExpenses = 0;
+    const directExpensesList = [];
+    journals.forEach(j => {
+      j.entries.forEach(e => {
+        if ((e.accountCode.startsWith('5-') || e.accountCode.startsWith('6-')) && e.accountCode !== '5-5350' && e.accountCode !== '5-5300') {
+          if (e.debit > 0) {
+            extraExpenses += e.debit;
+            directExpensesList.push({
+              date: j.date,
+              journalNumber: j.journalNumber,
+              description: j.description,
+              accountCode: e.accountCode,
+              accountName: e.accountName,
+              amount: e.debit
+            });
+          }
+        }
+      });
+    });
+
+    // 4. Net Profit Margins
+    const grossProfit = revenueAccrual - totalCOGS;
+    const grossMarginPct = revenueAccrual > 0 ? (grossProfit / revenueAccrual) * 100 : 0;
+
+    const netProfit = grossProfit - extraExpenses;
+    const netMarginPct = revenueAccrual > 0 ? (netProfit / revenueAccrual) * 100 : 0;
+
+    return {
+      booking,
+      type,
+      revenueAccrual,
+      revenueCash,
+      baseCOGS,
+      flightsCOGS,
+      hotelsCOGS,
+      logisticsCOGS,
+      ihramCount,
+      koperCount,
+      batikCount,
+      totalCOGS,
+      extraExpenses,
+      directExpensesList,
+      grossProfit,
+      grossMarginPct,
+      netProfit,
+      netMarginPct
+    };
+  }
+
+  window.TMS_simulateForex = function() {
+    const usdRate = parseFloat(document.getElementById('forex_usd_rate').value) || 16200;
+    const sarRate = parseFloat(document.getElementById('forex_sar_rate').value) || 4300;
+
+    const baseUSD = parseFloat(document.getElementById('forex_base_usd').value) || 0;
+    const baseSAR = parseFloat(document.getElementById('forex_base_sar').value) || 0;
+
+    const simulatedFlightCOGS = baseUSD * usdRate;
+    const simulatedHotelCOGS = baseSAR * sarRate;
+
+    const baseCOGS = parseFloat(document.getElementById('forex_base_cogs').value) || 0;
+    const logisticsCOGS = parseFloat(document.getElementById('forex_logistics_cogs').value) || 0;
+    const extraExpenses = parseFloat(document.getElementById('forex_extra_expenses').value) || 0;
+    const revenueAccrual = parseFloat(document.getElementById('forex_revenue_accrual').value) || 0;
+
+    const totalSimulatedCOGS = baseCOGS + simulatedFlightCOGS + simulatedHotelCOGS + logisticsCOGS;
+    const simulatedNetProfit = revenueAccrual - totalSimulatedCOGS - extraExpenses;
+    const simulatedNetPct = revenueAccrual > 0 ? (simulatedNetProfit / revenueAccrual) * 100 : 0;
+
+    document.getElementById('sim_flight_cogs').textContent = TMS.Store.formatCurrency(simulatedFlightCOGS);
+    document.getElementById('sim_hotel_cogs').textContent = TMS.Store.formatCurrency(simulatedHotelCOGS);
+    document.getElementById('sim_total_cogs').textContent = TMS.Store.formatCurrency(totalSimulatedCOGS);
+    
+    const profitEl = document.getElementById('sim_net_profit');
+    profitEl.textContent = TMS.Store.formatCurrency(simulatedNetProfit);
+    if (simulatedNetProfit >= 0) {
+      profitEl.style.color = 'var(--success)';
+    } else {
+      profitEl.style.color = 'var(--danger)';
+    }
+    document.getElementById('sim_net_pct').textContent = '(' + simulatedNetPct.toFixed(1) + '%)';
+  };
+
+  function downloadGroupProfitabilityPDF(bookingId) {
+    const analysis = calculateGroupProfitability(bookingId);
+    if (!analysis) return;
+
+    const u = analysis.booking;
+    const rows = [];
+    rows.push(['PENDAPATAN ROMBONGAN', '', '', '']);
+    rows.push(['  Harga Jual Paket Rombongan (Accrual)', u.bookingCode, S.formatCurrency(analysis.revenueAccrual), '']);
+    rows.push(['  Total Kas Diterima (Realized)', '', S.formatCurrency(analysis.revenueCash), '']);
+    rows.push(['Total Pendapatan (Accrual)', '', '', S.formatCurrency(analysis.revenueAccrual)]);
+    
+    rows.push(['HARGA POKOK PENJUALAN (BPP / COGS)', '', '', '']);
+    rows.push(['  HPP Dasar Paket', '', S.formatCurrency(analysis.baseCOGS), '']);
+    if (analysis.flightsCOGS > 0) rows.push(['  Beban Tiket Penerbangan Maskapai', '', S.formatCurrency(analysis.flightsCOGS), '']);
+    if (analysis.hotelsCOGS > 0) rows.push(['  Beban Akomodasi Hotel', '', S.formatCurrency(analysis.hotelsCOGS), '']);
+    if (analysis.logisticsCOGS > 0) rows.push(['  Beban Inventori Logistik Jemaah', '', S.formatCurrency(analysis.logisticsCOGS), '']);
+    rows.push(['Total BPP / Direct COGS', '', '', '(' + S.formatCurrency(analysis.totalCOGS) + ')']);
+    
+    rows.push(['LABA KOTOR ROMBONGAN', '', '', S.formatCurrency(analysis.grossProfit)]);
+    
+    rows.push(['BEBAN OPERASIONAL LANGSUNG (GL)', '', '', '']);
+    analysis.directExpensesList.forEach(e => {
+      rows.push([`  ${e.description} (${S.formatDate(e.date)})`, e.accountCode, S.formatCurrency(e.amount), '']);
+    });
+    rows.push(['Total Beban Operasional Langsung', '', '', '(' + S.formatCurrency(analysis.extraExpenses) + ')']);
+    
+    rows.push(['LABA BERSIH ROMBONGAN', '', '', S.formatCurrency(analysis.netProfit)]);
+    
+    const subtitle = `Rombongan: ${u.packageName || u.tourName} (${u.bookingCode}) - Keberangkatan: ${S.formatDate(u.departureDate)}`;
+    TMS.PDF.generateFinancialReport('Laporan Laba Rugi Rombongan', ['Keterangan', 'Referensi / Akun', 'Jumlah', 'Total'], rows, subtitle);
+  }
+
+  function renderGroupProfitability() {
+    const allBookings = [
+      ...S.getAll('umroh').map(b => ({ id: b.id, code: b.bookingCode, name: `🕋 [UMROH] ${b.packageName || b.tourName} (${b.bookingCode})`, type: 'umroh' })),
+      ...S.getAll('tours').map(b => ({ id: b.id, code: b.bookingCode, name: `🌴 [WISATA] ${b.tourName} (${b.bookingCode})`, type: 'tour' }))
+    ];
+
+    let currentBookingId = selectedGroupBookingId;
+    if (!currentBookingId && allBookings.length > 0) {
+      currentBookingId = allBookings[0].id;
+    }
+
+    if (!currentBookingId) {
+      return `
+      <div class="card p-3" style="text-align:center;">
+        <div class="table-empty" style="padding: 60px;">
+          <i data-lucide="line-chart" style="width: 48px; height: 48px; opacity: 0.3; display: block; margin: 0 auto 16px;"></i>
+          Belum ada Paket Rombongan aktif (Umroh atau Wisata) untuk dianalisis.
+        </div>
+      </div>`;
+    }
+
+    const analysis = calculateGroupProfitability(currentBookingId);
+    if (!analysis) {
+      return `<div class="card p-3"><div class="table-empty">Rombongan tidak ditemukan atau terhapus.</div></div>`;
+    }
+
+    const u = analysis.booking;
+    const optionsHtml = allBookings.map(b => `
+      <option value="${b.id}" ${b.id === currentBookingId ? 'selected' : ''}>${b.name}</option>
+    `).join('');
+
+    // Cost percentages
+    const totalCOGS = analysis.totalCOGS || 1;
+    const pctBase = (analysis.baseCOGS / totalCOGS) * 100;
+    const pctFlights = (analysis.flightsCOGS / totalCOGS) * 100;
+    const pctHotels = (analysis.hotelsCOGS / totalCOGS) * 100;
+    const pctLogistics = (analysis.logisticsCOGS / totalCOGS) * 100;
+
+    // Forex simulator multipliers
+    const defaultUSDPrice = analysis.flightsCOGS;
+    const defaultSARPrice = analysis.hotelsCOGS;
+    const defaultUSDQty = Math.round(defaultUSDPrice / 16200);
+    const defaultSARQty = Math.round(defaultSARPrice / 4300);
+
+    // Participant rows
+    const participants = u.participants || [];
+    const participantRowsHtml = participants.map((p, idx) => {
+      const sellPortion = analysis.revenueAccrual / (participants.length || 1);
+      const basePortion = analysis.baseCOGS / (participants.length || 1);
+      const flightPortion = analysis.flightsCOGS / (participants.length || 1);
+      const hotelPortion = analysis.hotelsCOGS / (participants.length || 1);
+      
+      let logPortion = 0;
+      if (analysis.type === 'umroh') {
+        if (p.ihramSerah) logPortion += 150000;
+        if (p.koperSerah) logPortion += 450000;
+        if (p.batikSerah) logPortion += 100000;
+      }
+      
+      const totalJemaahCost = basePortion + flightPortion + hotelPortion + logPortion;
+      const jemaahNetProfit = sellPortion - totalJemaahCost;
+      
+      return `
+      <tr>
+        <td style="text-align:left; padding:10px;">${idx+1}</td>
+        <td style="text-align:left; font-weight:700; padding:10px;">${p.name}</td>
+        <td style="padding:10px; font-weight:600;" class="font-mono">${S.formatCurrency(sellPortion)}</td>
+        <td style="padding:10px;" class="font-mono">${S.formatCurrency(totalJemaahCost)}</td>
+        <td style="padding:10px; font-weight:700; color:${jemaahNetProfit >= 0 ? 'var(--success)' : 'var(--danger)'};" class="font-mono">${S.formatCurrency(jemaahNetProfit)}</td>
+      </tr>
+      `;
+    }).join('') || `<tr><td colspan="5" class="table-empty">Belum ada manifest jemaah terdaftar</td></tr>`;
+
+    // Direct operational expenses rows
+    const expenseRowsHtml = analysis.directExpensesList.map((e, idx) => `
+      <tr>
+        <td style="text-align:left; padding:10px;">${S.formatDate(e.date)}</td>
+        <td style="text-align:left; font-weight:700; padding:10px;" class="font-mono">${e.journalNumber}</td>
+        <td style="text-align:left; padding:10px;">${e.description}</td>
+        <td style="text-align:left; padding:10px;"><span class="badge badge-outline" style="font-family:monospace;">${e.accountCode} - ${e.accountName}</span></td>
+        <td style="padding:10px; font-weight:700; color:var(--danger);" class="font-mono">${S.formatCurrency(e.amount)}</td>
+      </tr>
+    `).join('') || `<tr><td colspan="5" class="table-empty">Belum ada beban operasional GL yang dirujuk ke rombongan ini</td></tr>`;
+
+    return `
+    <div style="display:flex; flex-direction:column; gap:20px; width:100%;">
+      <!-- Selector & PDF Export Toolbar -->
+      <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(184,158,103,0.03); border:1px solid rgba(184,158,103,0.15); border-radius:12px; padding:14px 20px; flex-wrap:wrap; gap:12px;">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <label style="font-weight:800; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">Pilih Rombongan:</label>
+          <select class="form-control" style="width:340px; font-weight:700; border-color:rgba(184,158,103,0.25);" onchange="TMS.Accounting.setSelectedGroupBookingId(this.value); TMS.App.navigate('accounting/group-profitability');">
+            ${optionsHtml}
+          </select>
+        </div>
+        <div>
+          <button type="button" class="btn btn-primary" onclick="TMS.Accounting.downloadGroupProfitabilityPDF('${currentBookingId}')" style="font-weight:700; display:flex; align-items:center; gap:6px;"><i data-lucide="download" style="width:16px;height:16px;"></i> Unduh PDF Laba Rugi</button>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;">
+        <!-- Card 1: Total Pendapatan -->
+        <div class="card" style="background: linear-gradient(135deg, rgba(7, 112, 227, 0.05), rgba(7, 112, 227, 0.01)); border: 1px solid rgba(7, 112, 227, 0.15); border-left: 5px solid var(--primary); padding: 18px; border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm);">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Pendapatan Kotor (Accrual)</div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin-top: 8px; font-family: monospace;">${S.formatCurrency(analysis.revenueAccrual)}</div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border-color); margin-top: 12px; padding-top: 8px; display: flex; justify-content: space-between;">
+            <span>Realisasi Kas (Terbayar):</span>
+            <span style="font-weight: 700; color: var(--success);">${S.formatCurrency(analysis.revenueCash)}</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Biaya Pokok (Direct COGS) -->
+        <div class="card" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(245, 158, 11, 0.01)); border: 1px solid rgba(245, 158, 11, 0.15); border-left: 5px solid #f59e0b; padding: 18px; border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm);">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Biaya Langsung (Direct COGS)</div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin-top: 8px; font-family: monospace;">${S.formatCurrency(analysis.totalCOGS)}</div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border-color); margin-top: 12px; padding-top: 8px; display: flex; justify-content: space-between;">
+            <span>HPP Dasar & Tiket:</span>
+            <span style="font-weight: 700;">${S.formatCurrency(analysis.baseCOGS + analysis.flightsCOGS)}</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Beban Tambahan Jurnal -->
+        <div class="card" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(239, 68, 68, 0.01)); border: 1px solid rgba(239, 68, 68, 0.15); border-left: 5px solid var(--danger); padding: 18px; border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm);">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Beban Operasional Langsung</div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--text-primary); margin-top: 8px; font-family: monospace;">${S.formatCurrency(analysis.extraExpenses)}</div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border-color); margin-top: 12px; padding-top: 8px; display: flex; justify-content: space-between;">
+            <span>Jurnal Beban Ter-tag:</span>
+            <span style="font-weight: 700;">${analysis.directExpensesList.length} Transaksi</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Laba Bersih Rombongan -->
+        <div class="card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.06), rgba(16, 185, 129, 0.02)); border: 1px solid rgba(16, 185, 129, 0.18); border-left: 5px solid var(--success); padding: 18px; border-radius: 12px; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm);">
+          <div>
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Estimasi Laba Bersih</div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--success); margin-top: 8px; font-family: monospace;">${S.formatCurrency(analysis.netProfit)}</div>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); border-top: 1px solid var(--border-color); margin-top: 12px; padding-top: 8px; display: flex; justify-content: space-between;">
+            <span>Margin Laba Bersih:</span>
+            <span style="font-weight: 800; color: var(--success);">${analysis.netMarginPct.toFixed(1)}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cost Charts & Forex Simulator Grid -->
+      <div style="display:flex; gap:20px; flex-wrap:wrap; width:100%;">
+        <!-- Cost & Cash Visualizer Charts -->
+        <div class="card" style="border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; background: var(--bg-card); flex: 1.5; min-width: 340px; box-shadow: var(--shadow-sm); display:flex; flex-direction:column; gap:24px;">
+          
+          <!-- Cost Breakdown Chart -->
+          <div>
+            <div style="font-weight:800; font-size:13px; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--primary);"></span>
+              Alokasi Biaya Pokok (Direct COGS)
+            </div>
+            
+            <div style="height: 24px; border-radius: 8px; overflow: hidden; display: flex; width: 100%; background: var(--bg-secondary); margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+              ${analysis.baseCOGS > 0 ? `<div style="width: ${pctBase}%; background: var(--primary); height: 100%;" title="HPP Dasar: ${pctBase.toFixed(1)}%"></div>` : ''}
+              ${analysis.flightsCOGS > 0 ? `<div style="width: ${pctFlights}%; background: #3b82f6; height: 100%;" title="Tiket Pesawat: ${pctFlights.toFixed(1)}%"></div>` : ''}
+              ${analysis.hotelsCOGS > 0 ? `<div style="width: ${pctHotels}%; background: #f59e0b; height: 100%;" title="Akomodasi Hotel: ${pctHotels.toFixed(1)}%"></div>` : ''}
+              ${analysis.logisticsCOGS > 0 ? `<div style="width: ${pctLogistics}%; background: #10b981; height: 100%;" title="Logistik: ${pctLogistics.toFixed(1)}%"></div>` : ''}
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; font-size:11px; color:var(--text-muted);">
+              <div style="display:flex; align-items:center; gap:6px;"><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:var(--primary);"></span> <strong>HPP Dasar:</strong> ${S.formatCurrency(analysis.baseCOGS)} (${pctBase.toFixed(1)}%)</div>
+              <div style="display:flex; align-items:center; gap:6px;"><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:#3b82f6;"></span> <strong>Tiket Maskapai:</strong> ${S.formatCurrency(analysis.flightsCOGS)} (${pctFlights.toFixed(1)}%)</div>
+              <div style="display:flex; align-items:center; gap:6px;"><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:#f59e0b;"></span> <strong>Akomodasi Hotel:</strong> ${S.formatCurrency(analysis.hotelsCOGS)} (${pctHotels.toFixed(1)}%)</div>
+              <div style="display:flex; align-items:center; gap:6px;"><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:#10b981;"></span> <strong>Logistik Jemaah:</strong> ${S.formatCurrency(analysis.logisticsCOGS)} (${pctLogistics.toFixed(1)}%)</div>
+            </div>
+          </div>
+
+          <!-- Cash Position Chart -->
+          <div style="border-top:1px solid var(--border-color); padding-top:20px;">
+            <div style="font-weight:800; font-size:13px; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px; display:flex; align-items:center; gap:8px;">
+              <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--success);"></span>
+              Realisasi Pembayaran Kas (vs. Piutang)
+            </div>
+
+            <div style="height: 24px; border-radius: 8px; overflow: hidden; display: flex; width: 100%; background: var(--bg-secondary); margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+              ${analysis.revenueCash > 0 ? `<div style="width: ${(analysis.revenueCash / analysis.revenueAccrual * 100)}%; background: var(--success); height: 100%;" title="Kas Diterima: ${(analysis.revenueCash / analysis.revenueAccrual * 100).toFixed(1)}%"></div>` : ''}
+              ${(analysis.revenueAccrual - analysis.revenueCash) > 0 ? `<div style="width: ${((analysis.revenueAccrual - analysis.revenueCash) / analysis.revenueAccrual * 100)}%; background: var(--danger); height: 100%;" title="Sisa Piutang: ${((analysis.revenueAccrual - analysis.revenueCash) / analysis.revenueAccrual * 100).toFixed(1)}%"></div>` : ''}
+            </div>
+
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); flex-wrap:wrap; gap:10px;">
+              <div style="display:flex; align-items:center; gap:6px;"><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:var(--success);"></span> <strong>Kas Diterima (Realized):</strong> ${S.formatCurrency(analysis.revenueCash)} (${(analysis.revenueCash / analysis.revenueAccrual * 100).toFixed(1)}%)</div>
+              <div style="display:flex; align-items:center; gap:6px;"><span style="display:inline-block; width:10px; height:10px; border-radius:3px; background:var(--danger);"></span> <strong>Sisa Piutang Jemaah:</strong> ${S.formatCurrency(analysis.revenueAccrual - analysis.revenueCash)} (${((analysis.revenueAccrual - analysis.revenueCash) / analysis.revenueAccrual * 100).toFixed(1)}%)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulator Kurs Valuta Asing (USD/SAR to IDR) -->
+        <div class="card" style="border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; background: var(--bg-card); flex: 1; min-width: 300px; box-shadow: var(--shadow-sm);">
+          <div style="font-weight: 800; font-size: 14px; color: var(--primary); margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="calculator" style="width: 18px; height: 18px;"></i>
+            Simulator Kurs Valuta Asing (Manual Forex)
+          </div>
+          <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+            Simulasikan pergeseran laba bersih akibat fluktuasi kurs mata uang asing pada transaksi Tiket Pesawat (USD) dan Hotel (SAR).
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+            <div class="form-group">
+              <label style="font-size: 10px; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; display: block;">Kurs USD ke IDR *</label>
+              <input class="form-control form-control-sm" type="number" id="forex_usd_rate" value="16200" oninput="TMS_simulateForex()" style="font-weight: 700;">
+            </div>
+            <div class="form-group">
+              <label style="font-size: 10px; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; display: block;">Kurs SAR ke IDR *</label>
+              <input class="form-control form-control-sm" type="number" id="forex_sar_rate" value="4300" oninput="TMS_simulateForex()" style="font-weight: 700;">
+            </div>
+          </div>
+
+          <input type="hidden" id="forex_base_usd" value="${defaultUSDQty}">
+          <input type="hidden" id="forex_base_sar" value="${defaultSARQty}">
+          <input type="hidden" id="forex_base_cogs" value="${analysis.baseCOGS}">
+          <input type="hidden" id="forex_logistics_cogs" value="${analysis.logisticsCOGS}">
+          <input type="hidden" id="forex_extra_expenses" value="${analysis.extraExpenses}">
+          <input type="hidden" id="forex_revenue_accrual" value="${analysis.revenueAccrual}">
+
+          <div style="background: var(--bg-secondary); border-radius: 8px; padding: 12px; font-size: 12px; display: flex; flex-direction: column; gap: 8px;">
+            <div class="flex-between">
+              <span>Estimasi Tiket Pesawat ($${defaultUSDQty} USD):</span>
+              <strong id="sim_flight_cogs" class="font-mono">${S.formatCurrency(analysis.flightsCOGS)}</strong>
+            </div>
+            <div class="flex-between">
+              <span>Estimasi Hotel Makkah/Madinah (${defaultSARQty} SAR):</span>
+              <strong id="sim_hotel_cogs" class="font-mono">${S.formatCurrency(analysis.hotelsCOGS)}</strong>
+            </div>
+            <div class="flex-between" style="border-top: 1px dashed var(--border-color); padding-top: 8px;">
+              <span>Simulasi Total Biaya Pokok (BPP):</span>
+              <strong id="sim_total_cogs" class="font-mono" style="color: var(--text-primary); font-weight: 700;">${S.formatCurrency(analysis.totalCOGS)}</strong>
+            </div>
+            <div class="flex-between" style="border-top: 1px dashed var(--border-color); padding-top: 8px; font-size: 13px;">
+              <span style="font-weight: 700;">Simulasi Laba Bersih Rombongan:</span>
+              <div>
+                <strong id="sim_net_profit" class="font-mono" style="font-weight: 800; color: ${analysis.netProfit >= 0 ? 'var(--success)' : 'var(--danger)'};">${S.formatCurrency(analysis.netProfit)}</strong>
+                <span id="sim_net_pct" style="font-size: 11px; color: var(--success); font-weight: 800; margin-left: 4px;">(${analysis.netMarginPct.toFixed(1)}%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Participant Ledger Table -->
+      <div class="card" style="border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; background: var(--bg-card); box-shadow: var(--shadow-sm);">
+        <div style="font-weight: 800; font-size: 14px; color: var(--primary); margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="users" style="width: 18px; height: 18px;"></i>
+          Kontribusi Keuangan Per Jemaah (Participant Ledger)
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:60px; text-align:left; padding:10px;">No</th>
+                <th style="text-align:left; padding:10px;">Nama Jemaah</th>
+                <th style="padding:10px;">Pendapatan Kotor (Accrual)</th>
+                <th style="padding:10px;">Biaya Langsung (Direct COGS)</th>
+                <th style="padding:10px;">Estimasi Margin Kontribusi</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${participantRowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tagged Direct Expenses Table -->
+      <div class="card" style="border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; background: var(--bg-card); box-shadow: var(--shadow-sm);">
+        <div style="font-weight: 800; font-size: 14px; color: var(--primary); margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+          <i data-lucide="clipboard-list" style="width: 18px; height: 18px;"></i>
+          Beban Operasional Langsung Rombongan (GL Journal Tags)
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:110px; text-align:left; padding:10px;">Tanggal</th>
+                <th style="width:140px; text-align:left; padding:10px;">No. Jurnal</th>
+                <th style="text-align:left; padding:10px;">Keterangan</th>
+                <th style="text-align:left; padding:10px;">Perkiraan Akun</th>
+                <th style="padding:10px;">Jumlah Pengeluaran</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${expenseRowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    `;
+  }
+
   function render(subpage) {
     S.recalculateCOA();
     const tabs = [
       { id: 'income', label: '📊 Laba Rugi' },
+      { id: 'group-profitability', label: '📈 Laba Rugi Rombongan' },
       { id: 'balance', label: '⚖️ Neraca' },
       { id: 'cashflow', label: '💧 Arus Kas' },
       { id: 'ledger', label: '📒 Buku Besar' },
@@ -846,6 +1318,7 @@ TMS.Accounting = (() => {
     else if (active === 'cashflow') content = renderCashFlow();
     else if (active === 'ledger') content = renderLedger();
     else if (active === 'journals') content = renderJournals();
+    else if (active === 'group-profitability') content = renderGroupProfitability();
 
     if (active === 'journals') return content;
 
@@ -871,5 +1344,5 @@ TMS.Accounting = (() => {
     }
   }
 
-  return { render, renderIncomeStatement, renderBalanceSheet, renderCashFlow, renderLedger, renderJournals, showForm, saveJournal, addEntryRow, calcJournalTotal, viewDetail, viewDetailByNumber, deleteJournal, downloadIncome, downloadBalance, downloadCashFlow, downloadVoucher, exportIncomeExcel, exportBalanceExcel, exportCashFlowExcel, setPeriod, resetPeriod };
+  return { render, renderIncomeStatement, renderBalanceSheet, renderCashFlow, renderLedger, renderJournals, showForm, saveJournal, addEntryRow, calcJournalTotal, viewDetail, viewDetailByNumber, deleteJournal, downloadIncome, downloadBalance, downloadCashFlow, downloadVoucher, exportIncomeExcel, exportBalanceExcel, exportCashFlowExcel, setPeriod, resetPeriod, setSelectedGroupBookingId, calculateGroupProfitability, downloadGroupProfitabilityPDF };
 })();

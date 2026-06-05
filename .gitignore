@@ -1,7 +1,9 @@
 tms_database.json
+tms_database_corrupted.json
 .vscode/
 run_server.bat
 server.py
 start_background.vbs
 stop_server.bat
 .env
+scratch/

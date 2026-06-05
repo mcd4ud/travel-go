@@ -11,12 +11,14 @@ TMS.App = (() => {
     'hotels': { title: 'Voucher Hotel', icon: 'hotel', module: 'Hotel' },
     'rentals': { title: 'Voucher Rental', icon: 'car', module: 'Rental' },
     'tours': { title: 'Paket Wisata', icon: 'map', module: 'Tour' },
+    'umroh': { title: 'Paket Umroh & Haji', icon: 'palmtree', module: 'Umroh' },
     'invoices': { title: 'Manajemen Invoice', icon: 'file-text', module: 'Invoice' },
     'customers': { title: 'Manajemen Pelanggan', icon: 'users', module: 'Customer' },
     'vendors': { title: 'Manajemen Vendor & Deposit', icon: 'building-2', module: 'Vendor' },
     'coa': { title: 'Chart of Accounts', icon: 'book', module: 'COA' },
     'expenses': { title: 'Beban Operasional', icon: 'trending-down', module: 'Expenses' },
     'accounting': { title: 'Laporan Keuangan', icon: 'bar-chart-2', module: 'Accounting' },
+    'accounting/group-profitability': { title: 'Laba Rugi Rombongan', icon: 'line-chart', module: 'Accounting' },
     'accounting/income': { title: 'Laba Rugi', icon: 'bar-chart-2', module: 'Accounting' },
     'accounting/balance': { title: 'Neraca', icon: 'bar-chart-2', module: 'Accounting' },
     'accounting/cashflow': { title: 'Arus Kas', icon: 'bar-chart-2', module: 'Accounting' },
@@ -92,12 +94,10 @@ TMS.App = (() => {
     updateSidebar(user);
 
     let hash = window.location.hash.replace('#', '');
-    if (!hash) {
-      if (user && user.role === 'superadmin') {
-        hash = 'superadmin';
-      } else {
-        hash = 'dashboard';
-      }
+    if (user && user.role === 'superadmin' && (hash === 'dashboard' || !hash)) {
+      hash = 'superadmin';
+    } else if (!hash) {
+      hash = 'dashboard';
     }
     const page = PAGES[hash] || (user && user.role === 'superadmin' ? PAGES['superadmin'] : PAGES['dashboard']);
 
@@ -142,6 +142,8 @@ TMS.App = (() => {
       html = TMS.Rental.renderList();
     } else if (hash === 'tours') {
       html = TMS.Tour.renderList();
+    } else if (hash === 'umroh') {
+      html = TMS.Umroh.renderList();
     } else if (hash === 'invoices') {
       html = TMS.Invoice.renderList();
     } else if (hash === 'customers') {
@@ -263,9 +265,9 @@ TMS.App = (() => {
       const pageKey = item.getAttribute('data-page');
       if (!pageKey) return;
       
-      // Khusus superadmin, sembunyikan semua kecuali superadmin, users, dan dashboard
+      // Khusus superadmin, sembunyikan semua kecuali superadmin dan users
       if (isSuperAdmin) {
-        if (pageKey === 'superadmin' || pageKey === 'users' || pageKey === 'dashboard') item.style.display = 'flex';
+        if (pageKey === 'superadmin' || pageKey === 'users') item.style.display = 'flex';
         else item.style.display = 'none';
         return;
       }
@@ -485,7 +487,29 @@ TMS.App = (() => {
     }
   }
 
-  return { navigate, init, toast, updateBadge, handleRoute, shareToWhatsApp };
+  function injectPremiumSamplesIfMissing() {
+    if (TMS.Store && TMS.Store.injectPremiumSamplesIfMissing) {
+      TMS.Store.injectPremiumSamplesIfMissing();
+    }
+  }
+
+  function formatNumberInput(input) {
+    let originalLength = input.value.length;
+    let selectionStart = input.selectionStart;
+    let selectionEnd = input.selectionEnd;
+    let value = input.value.replace(/\D/g, '');
+    if (!value) {
+      input.value = '';
+      return;
+    }
+    let formatted = parseInt(value, 10).toLocaleString('id-ID');
+    input.value = formatted;
+    let newLength = formatted.length;
+    let diff = newLength - originalLength;
+    input.setSelectionRange(selectionStart + diff, selectionEnd + diff);
+  }
+
+  return { navigate, init, toast, updateBadge, handleRoute, shareToWhatsApp, injectPremiumSamplesIfMissing, formatNumberInput };
 })();
 
 // Initialize on DOM ready
@@ -494,10 +518,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.TMS.Firebase.init();
     if (TMS.Store && TMS.Store.initFirebase) {
       await TMS.Store.initFirebase();
+      try {
+        if (TMS.App && TMS.App.injectPremiumSamplesIfMissing) {
+          TMS.App.injectPremiumSamplesIfMissing();
+        }
+      } catch(e) {
+        console.error("Failed to auto-inject premium samples:", e);
+      }
     }
   }
   if (TMS.Database && TMS.Database.checkInitData) {
     TMS.Database.checkInitData();
   }
   TMS.App.init();
+  
+  // Hide splash screen immediately after app initialization
+  const splash = document.getElementById('appSplashScreen');
+  if (splash) {
+    splash.style.opacity = '0';
+    splash.style.visibility = 'hidden';
+    setTimeout(() => {
+      try { splash.remove(); } catch(e) {}
+    }, 400);
+  }
 });

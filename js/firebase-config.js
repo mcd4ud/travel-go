@@ -26,6 +26,13 @@ TMS.Firebase = (() => {
     }
     db = firebase.firestore();
     
+    // Sign in anonymously to bypass "request.auth != null" restrictions for all tenants
+    if (firebase.auth) {
+      firebase.auth().signInAnonymously().catch(err => {
+        console.warn('Firebase anonymous auth failed:', err);
+      });
+    }
+    
     try {
       db.enablePersistence().catch(err => {
         if (err.code == 'failed-precondition') {

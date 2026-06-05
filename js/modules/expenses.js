@@ -5,7 +5,7 @@ TMS.Expenses = (() => {
   const S = TMS.Store;
 
   function getExpenseAccounts() {
-    return S.getCOA().filter(a => a.type === 'expense');
+    return S.getCOA().filter(a => a.type === 'expense').sort((a, b) => a.code.localeCompare(b.code));
   }
 
   function renderList() {
@@ -122,7 +122,7 @@ TMS.Expenses = (() => {
           <label class="form-label">Jumlah *</label>
           <div class="input-group">
             <span class="input-prefix">Rp</span>
-            <input class="form-control" type="number" name="amount" required min="1" placeholder="0">
+            <input class="form-control" type="text" name="amount" required placeholder="0" oninput="TMS.App.formatNumberInput(this)">
           </div>
         </div>
         <div class="form-group">
@@ -255,7 +255,7 @@ TMS.Expenses = (() => {
     e.preventDefault();
     const fd = new FormData(e.target);
     const data = Object.fromEntries(fd.entries());
-    data.amount = parseFloat(data.amount) || 0;
+    data.amount = S.parseNumber(data.amount) || 0;
     data.expenseNumber = S.generateCode('expense');
 
     // Determine cash/bank account for credit

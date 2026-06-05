@@ -47,6 +47,7 @@ TMS.Invoice = (() => {
             <option value="hotel">Hotel</option>
             <option value="rental">Rental</option>
             <option value="tour">Paket Wisata</option>
+            <option value="umroh">Umroh</option>
           </select>
           <button class="btn btn-warning btn-sm" onclick="TMS.App.navigate('verify')"><i data-lucide="shield-check"></i> Verifikasi Bayar</button>
           <button class="btn btn-primary btn-sm" onclick="TMS.Invoice.manageBanks()"><i data-lucide="credit-card"></i> Kelola Bank</button>
@@ -64,7 +65,13 @@ TMS.Invoice = (() => {
   }
 
   function typeLabel(type) {
-    const m = { flight:'<span class="badge badge-primary">✈ Pesawat</span>', hotel:'<span class="badge badge-info">🏨 Hotel</span>', rental:'<span class="badge badge-warning">🚗 Rental</span>', tour:'<span class="badge badge-success">🗺 Paket</span>' };
+    const m = { 
+      flight:'<span class="badge badge-primary">✈ Pesawat</span>', 
+      hotel:'<span class="badge badge-info">🏨 Hotel</span>', 
+      rental:'<span class="badge badge-warning">🚗 Rental</span>', 
+      tour:'<span class="badge badge-success">🗺 Paket</span>',
+      umroh:'<span class="badge" style="background: rgba(184, 158, 103, 0.15); color: #B89E67; font-weight: 600;">🕌 Umroh</span>'
+    };
     return m[type] || type;
   }
 
@@ -159,7 +166,7 @@ TMS.Invoice = (() => {
             </div>
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label" style="font-size: 11px;">Nama Pemilik Rekening</label>
-              <input class="form-control" type="text" id="invRecAccountName" value="${inv.receivingAccountName || ''}" placeholder="Contoh: PT. Indonesia Terbang">
+              <input class="form-control" type="text" id="invRecAccountName" value="${inv.receivingAccountName || ''}" placeholder="Contoh: PT. Travela Nusantara">
             </div>
           </div>
         </div>

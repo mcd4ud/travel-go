@@ -288,7 +288,7 @@ TMS.Refund = (() => {
         <div class="form-group">
           <label class="form-label">Akun Pembayaran Kas/Bank *</label>
           <select class="form-control" name="bankAccount" required>
-            ${S.getCOA().filter(a => a.type === 'asset' && (a.code.startsWith('1-10') || a.code.startsWith('1-13'))).map(a => `<option value="${a.code}">${a.code} - ${a.name}</option>`).join('')}
+            ${S.getCOA().filter(a => a.type === 'asset' && (a.code.startsWith('1-10') || a.code.startsWith('1-13'))).sort((a, b) => a.code.localeCompare(b.code)).map(a => `<option value="${a.code}">${a.code} - ${a.name}</option>`).join('')}
           </select>
           <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">Akun kas/bank untuk mutasi pengembalian</div>
         </div>
